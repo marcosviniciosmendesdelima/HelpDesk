@@ -27,3 +27,4 @@ Além disso, o projeto serve como prática para desenvolvimento de sistemas de s
 - Victor Manoel  
 - Luis Henrique Amancio Nobre  
 - Fernando Figueirôa
+- Felipe Albuquerque
