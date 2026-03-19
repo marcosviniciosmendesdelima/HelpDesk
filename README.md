@@ -26,5 +26,4 @@ Além disso, o projeto serve como prática para desenvolvimento de sistemas de s
 - Vinicius Mendes  
 - Victor Manoel  
 - Luis Henrique Amancio Nobre  
-- Guilherme Arnoud
 - Fernando Figueirôa
