@@ -12,4 +12,4 @@ WORKDIR /app
 COPY --from=build /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY . .
 # ENTRYPOINT: Comando que inicia a API ao "nascer" o container
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["python", "src/api/main.py"]
