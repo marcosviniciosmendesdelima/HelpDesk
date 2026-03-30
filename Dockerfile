@@ -11,5 +11,7 @@ WORKDIR /app
 # COPY --from: Transfere apenas as bibliotecas prontas (Multi-stage Build)
 COPY --from=build /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY . .
+ENV PYTHONPATH=/app
+
 # ENTRYPOINT: Comando que inicia a API ao "nascer" o container
 ENTRYPOINT ["python", "src/api/main.py"]
