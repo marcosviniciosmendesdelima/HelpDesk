@@ -1,15 +1,18 @@
-# Build - Prepara as bibliotecas
+# 1. Build - Prepara as bibliotecas (SDK pesado)
 FROM python:3.13-slim AS build
 WORKDIR /app
 COPY requirements.txt .
+# Instala as dependências que o Felipe e o Luis usaram
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Final - Imagem leve para rodar no Mac (Runtime)
+# 2. Final - Imagem leve para rodar no Mac (Runtime)
 FROM python:3.13-slim AS final
 WORKDIR /app
-# Transfere apenas as bibliotecas prontas
+
+# Transfere apenas as bibliotecas prontas (Multi-stage Build)
 COPY --from=build /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY . .
 
-# Ajuste: Roda como módulo para o Python achar a pasta 'src' automaticamente
-ENTRYPOINT ["python", "-m", "src.api.main"]
+# AJUSTE DEFINITIVO: Roda o motor Uvicorn na porta 80 que o seu Docker Desktop espera
+# Estamos apontando para a variável 'app' dentro de src/api/main.py
+CMD ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "80"]
