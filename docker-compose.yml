@@ -1,27 +1,26 @@
-version: '3.8'
-
 services:
   api-helpdesk:
     build:
-      context: .           # Usa o Dockerfile da pasta atual
+      context: .
       dockerfile: Dockerfile
     ports:
-      - "5000:80"          # Porta do Mac : Porta do Container
+      - "5000:8000"  # O Windows acessa na 5000, o Docker entrega na 8000
     environment:
-      - DATABASE_URL=db-helpdesk # Nome do serviço como endereço DNS
+      - DATABASE_URL=postgresql://postgres:postgres@db-helpdesk:5432/helpdesk
     depends_on:
-      - db-helpdesk        # Garante a ordem de inicialização
+      - db-helpdesk
 
   db-helpdesk:
     image: postgres:15-alpine
+    container_name: db-helpdesk-1
     environment:
-      - POSTGRES_PASSWORD=SenhaForte123
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=helpdesk
     ports:
       - "5432:5432"
     volumes:
-      # Volumes: Garante que os dados do banco não sumam ao remover o container
       - helpdesk-data:/var/lib/postgresql/data 
 
 volumes:
-  # Volume Nomeado: Persistência de dados fora do ciclo de vida do container
   helpdesk-data:
