@@ -1,6 +1,14 @@
 from fastapi import FastAPI
+# --- IMPORTAÇÕES DO BANCO DE DADOS ---
+from src.infrastructure.database.config import engine, Base
+from src.infrastructure.database import models
+
+# CRIA AS TABELAS NO POSTGRES AUTOMATICAMENTE
+Base.metadata.create_all(bind=engine)
+# -------------------------------------
+
 # Verifique se o import está com o "S" no final:
-from src.api.controllers import chamados_controllers 
+from src.api.controllers import chamados_controllers
 
 app = FastAPI(title="Help Desk API", version="v1")
 
