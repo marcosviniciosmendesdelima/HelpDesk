@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "8/DMknKeSXY=",
+  "dgSpecHash": "flNggrCJwS0=",
   "success": true,
-  "projectFilePath": "/Users/viniciusmendes/Desktop/HelpDesk.Gateway/HelpDesk.Gateway.csproj",
+  "projectFilePath": "/Users/viniciusmendes/Desktop/helpdesk-tickets/HelpDesk.Gateway/HelpDesk.Gateway.csproj",
   "expectedPackageFiles": [
     "/Users/viniciusmendes/.nuget/packages/system.io.hashing/8.0.0/system.io.hashing.8.0.0.nupkg.sha512",
     "/Users/viniciusmendes/.nuget/packages/yarp.reverseproxy/2.3.0/yarp.reverseproxy.2.3.0.nupkg.sha512"

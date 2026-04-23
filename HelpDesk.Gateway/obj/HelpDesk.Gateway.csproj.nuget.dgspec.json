@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/viniciusmendes/Desktop/HelpDesk.Gateway/HelpDesk.Gateway.csproj": {}
+    "/Users/viniciusmendes/Desktop/helpdesk-tickets/HelpDesk.Gateway/HelpDesk.Gateway.csproj": {}
   },
   "projects": {
-    "/Users/viniciusmendes/Desktop/HelpDesk.Gateway/HelpDesk.Gateway.csproj": {
+    "/Users/viniciusmendes/Desktop/helpdesk-tickets/HelpDesk.Gateway/HelpDesk.Gateway.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/viniciusmendes/Desktop/HelpDesk.Gateway/HelpDesk.Gateway.csproj",
+        "projectUniqueName": "/Users/viniciusmendes/Desktop/helpdesk-tickets/HelpDesk.Gateway/HelpDesk.Gateway.csproj",
         "projectName": "HelpDesk.Gateway",
-        "projectPath": "/Users/viniciusmendes/Desktop/HelpDesk.Gateway/HelpDesk.Gateway.csproj",
+        "projectPath": "/Users/viniciusmendes/Desktop/helpdesk-tickets/HelpDesk.Gateway/HelpDesk.Gateway.csproj",
         "packagesPath": "/Users/viniciusmendes/.nuget/packages/",
-        "outputPath": "/Users/viniciusmendes/Desktop/HelpDesk.Gateway/obj/",
+        "outputPath": "/Users/viniciusmendes/Desktop/helpdesk-tickets/HelpDesk.Gateway/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/viniciusmendes/.nuget/NuGet/NuGet.Config"
