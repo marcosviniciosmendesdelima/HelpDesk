@@ -1,4 +1,3 @@
-# 1. Build - Prepara as bibliotecas (SDK pesado)
 FROM python:3.13-slim AS build
 WORKDIR /app
 COPY requirements.txt .
