@@ -1,4 +1,13 @@
+<<<<<<< Updated upstream
 # 1. Build - Prepara as bibliotecas (SDK pesado)
+=======
+
+
+3:18 PM (0 minutes ago)
+to me
+
+# Build - Prepara as bibliotecas (SDK pesado)
+>>>>>>> Stashed changes
 FROM python:3.13-slim AS build
 WORKDIR /app
 COPY requirements.txt .
