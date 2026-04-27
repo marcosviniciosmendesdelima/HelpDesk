@@ -1,25 +1,25 @@
 version: '3.8'
 
 services:
-api-helpdesk:
-build:
-context: .
-dockerfile: Dockerfile
-ports:
-- "5000:80"
-environment:
-DATABASE_URL: postgresql://postgres:SenhaForte123@db-helpdesk:5432/postgres
-depends_on:
-- db-helpdesk
+  api-helpdesk:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:80"
+    environment:
+      DATABASE_URL: postgresql://postgres:SenhaForte123@db-helpdesk:5432/postgres
+    depends_on:
+      - db-helpdesk
 
-db-helpdesk:
-image: postgres:15-alpine
-environment:
-POSTGRES_PASSWORD: SenhaForte123
-ports:
-- "5432:5432"
-volumes:
-- helpdesk-data:/var/lib/postgresql/data
+  db-helpdesk:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_PASSWORD: SenhaForte123
+    ports:
+      - "5432:5432"
+    volumes:
+      - helpdesk-data:/var/lib/postgresql/data
 
 volumes:
-helpdesk-data:
+  helpdesk-data:
