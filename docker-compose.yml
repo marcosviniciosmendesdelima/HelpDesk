@@ -22,4 +22,8 @@ services:
       - helpdesk-data:/var/lib/postgresql/data
 
 volumes:
+<<<<<<< HEAD
   helpdesk-data:
+=======
+  helpdesk-data:
+>>>>>>> main
