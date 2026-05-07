@@ -1,10 +1,14 @@
 from fastapi import FastAPI
-from . import models
-from .database import engine
-from .controllers import chamados_controllers 
+# --- IMPORTAÇÕES DO BANCO DE DADOS ---
+from src.infrastructure.database.config import engine, Base
+from src.infrastructure.database import models
 
-# COMANDO MÁGICO: Cria as tabelas no Postgres se elas não existirem
-models.Base.metadata.create_all(bind=engine)
+# CRIA AS TABELAS NO POSTGRES AUTOMATICAMENTE
+Base.metadata.create_all(bind=engine)
+# -------------------------------------
+
+# Verifique se o import está com o "S" no final:
+from src.api.controllers import chamados_controllers
 
 app = FastAPI(title="Help Desk API", version="v1")
 
@@ -12,5 +16,5 @@ app = FastAPI(title="Help Desk API", version="v1")
 async def health_check():
     return {"status": "ok", "version": "v1"}
 
-# Incluindo as rotas que o Vitor criou
+# Verifique se a rota também usa o nome correto:
 app.include_router(chamados_controllers.router)

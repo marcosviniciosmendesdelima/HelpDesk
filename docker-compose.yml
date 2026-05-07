@@ -1,26 +1,25 @@
+version: '3.8'
+
 services:
   api-helpdesk:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "5000:8000"  # O Windows acessa na 5000, o Docker entrega na 8000
+      - "5000:80"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db-helpdesk:5432/helpdesk
+      DATABASE_URL: postgresql://postgres:SenhaForte123@db-helpdesk:5432/postgres
     depends_on:
       - db-helpdesk
 
   db-helpdesk:
     image: postgres:15-alpine
-    container_name: db-helpdesk-1
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=helpdesk
+      POSTGRES_PASSWORD: SenhaForte123
     ports:
       - "5432:5432"
     volumes:
-      - helpdesk-data:/var/lib/postgresql/data 
+      - helpdesk-data:/var/lib/postgresql/data
 
 volumes:
   helpdesk-data:
