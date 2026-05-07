@@ -6,27 +6,40 @@ var builder = WebApplication.CreateBuilder(args);
 
 // --- CONFIGURAÇÃO DE OBSERVABILIDADE (SERILOG) ---
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console() // Exibe logs coloridos no terminal do seu Mac
-    .WriteTo.File("logs/gateway-log.txt", rollingInterval: RollingInterval.Day) // Grava a "Caixa-Preta"
+    .WriteTo.Console()
+    .WriteTo.File("logs/gateway-log.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 builder.Host.UseSerilog();
 
 // --- POLÍTICAS DE RESILIÊNCIA (POLLY) ---
+
 // Política de Retry: Tenta 3 vezes antes de desistir
 var retryPolicy = HttpPolicyExtensions
     .HandleTransientHttpError()
-    .WaitAndRetryAsync(3, _ => TimeSpan.FromSeconds(2), (result, timeSpan, retryCount, context) =>
-    {
-        Log.Warning($"[RETRY] Tentativa {retryCount} falhou. Tentando novamente em {timeSpan.TotalSeconds}s...");
-    });
+    .WaitAndRetryAsync(
+        3,
+        _ => TimeSpan.FromSeconds(2),
+        (result, timeSpan, retryCount, context) =>
+        {
+            Log.Warning($"[RETRY] Tentativa {retryCount} falhou. Tentando novamente em {timeSpan.TotalSeconds}s...");
+        });
 
-// Política de Circuit Breaker: Abre o disjuntor após 5 falhas consecutivas
+// --- [PARTE DO LUIS] CIRCUIT BREAKER (DISJUNTOR) ---
+// Se falhar 3 vezes seguidas, o circuito "abre" por 15 segundos
 var circuitBreakerPolicy = HttpPolicyExtensions
     .HandleTransientHttpError()
-    .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30),
-        onBreak: (result, timespan) => Log.Error("--- CIRCUITO ABERTO! Gateway isolado por 30s para evitar sobrecarga ---"),
-        onReset: () => Log.Information("--- Circuito fechado. Operação normal restabelecida ---"));
+    .CircuitBreakerAsync(
+        handledEventsAllowedBeforeBreaking: 3,
+        durationOfBreak: TimeSpan.FromSeconds(15),
+        onBreak: (result, timespan) =>
+        {
+            Log.Error($"--- CIRCUITO ABERTO: Sistema em quarentena por {timespan.TotalSeconds}s devido a falhas consecutivas ---");
+        },
+        onReset: () =>
+        {
+            Log.Information("--- CIRCUITO FECHADO: Conectividade restabelecida com a API! ---");
+        });
 
 // --- CONFIGURAÇÃO DO GATEWAY (YARP) ---
 builder.Services.AddReverseProxy()
@@ -43,16 +56,16 @@ var app = builder.Build();
 app.MapReverseProxy();
 
 // --- EXECUÇÃO COM MONITORAMENTO DE CICLO DE VIDA ---
-try 
+try
 {
     Log.Information("Iniciando Gateway HelpDesk com Força Máxima...");
-    app.Run(); // Este comando mantém o servidor rodando e ouvindo requisições
+    app.Run();
 }
-catch (Exception ex) 
+catch (Exception ex)
 {
     Log.Fatal(ex, "O Gateway falhou ao iniciar inesperadamente!");
 }
-finally 
+finally
 {
-    Log.CloseAndFlush(); // Garante que todos os logs sejam gravados antes de fechar
+    Log.CloseAndFlush();
 }
