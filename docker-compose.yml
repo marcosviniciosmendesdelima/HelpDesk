@@ -1,42 +1,48 @@
 version: '3.8'
 
 services:
-  # 1. GATEWAY (A Portaria Única - Ponto de Entrada)
-  gateway:
-    build:
-      context: ./HelpDesk.Gateway
-    container_name: helpdesk-gateway
+  # 1. BROKER DE MENSAGENS (Etapa 7.1)
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: helpdesk-rabbitmq
     ports:
-      - "5281:80"  # Porta que você acessa no navegador
-    depends_on:
-      - api-helpdesk
-      - catalogo-api
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - helpdesk-internal-net
 
-  # 2. SERVICE A (Sua API Python - Tickets)
+  # 2. O GATEWAY
+  gateway:
+    build:
+      context: .
+      dockerfile: HelpDesk.Gateway/Dockerfile
+    container_name: helpdesk-gateway
+    ports:
+      - "5281:80"
+    depends_on:
+      - rabbitmq
+      - api-helpdesk
+    networks:
+      - helpdesk-internal-net
+
+  # 3. SERVICE A (API)
   api-helpdesk:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: helpdesk-api
-    # Removi a porta 5000 do host para forçar o uso do Gateway (Segurança)
     environment:
       DATABASE_URL: postgresql://postgres:SenhaForte123@db-helpdesk:5432/postgres
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
     depends_on:
       - db-helpdesk
+      - rabbitmq
     networks:
       - helpdesk-internal-net
 
-  # 3. SERVICE B (Microsserviço de Catálogo do Victor)
-  catalogo-api:
-    build:
-      context: ./GestaoPedidos.Catalogo 
-    container_name: catalogo-api
-    networks:
-      - helpdesk-internal-net
-
-  # 4. BANCO DE DADOS (Persistência)
+  # 4. BANCO DE DADOS
   db-helpdesk:
     image: postgres:15-alpine
     container_name: helpdesk-db
@@ -49,7 +55,6 @@ services:
     networks:
       - helpdesk-internal-net
 
-# REDE INTERNA: Garante que os serviços se comuniquem pelo nome 
 networks:
   helpdesk-internal-net:
     driver: bridge

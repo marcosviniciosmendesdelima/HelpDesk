@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/HelpDesk.Gateway.props" />
-</Project>

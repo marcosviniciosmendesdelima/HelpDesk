@@ -1,0 +1,11 @@
+# Ignorar pastas do .NET
+[Bb]in/
+[Oo]bj/
+
+# Ignorar pastas do Python
+__pycache__/
+*.pyc
+venv/
+
+# Ignorar dados do Docker
+helpdesk-data/
