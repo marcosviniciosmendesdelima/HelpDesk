@@ -4,29 +4,30 @@ using Polly.Extensions.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- CONFIGURAÇÃO DE OBSERVABILIDADE (SERILOG) ---
+// --- 1. CONFIGURAÇÃO DE OBSERVABILIDADE (SERILOG) ---
+// Registra logs em console e arquivo para monitorar falhas e latência.
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .WriteTo.File("logs/gateway-log.txt", rollingInterval: RollingInterval.Day)
+    .WriteTo.File("logs/gateway-audit.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 builder.Host.UseSerilog();
 
-// --- POLÍTICAS DE RESILIÊNCIA (POLLY) ---
+// --- 2. POLÍTICAS DE RESILIÊNCIA (POLLY) ---
+// Tratamento de Falhas.
 
-// Política de Retry: Tenta 3 vezes antes de desistir
+// Política de Retry (Retentativa): Tenta 3 vezes antes de desistir.
 var retryPolicy = HttpPolicyExtensions
     .HandleTransientHttpError()
     .WaitAndRetryAsync(
-        3,
+        3, 
         _ => TimeSpan.FromSeconds(2),
         (result, timeSpan, retryCount, context) =>
         {
             Log.Warning($"[RETRY] Tentativa {retryCount} falhou. Tentando novamente em {timeSpan.TotalSeconds}s...");
         });
 
-// --- [PARTE DO LUIS] CIRCUIT BREAKER (DISJUNTOR) ---
-// Se falhar 3 vezes seguidas, o circuito "abre" por 15 segundos
+// Política de Circuit Breaker (Disjuntor): Abre se houver 3 falhas seguidas.
 var circuitBreakerPolicy = HttpPolicyExtensions
     .HandleTransientHttpError()
     .CircuitBreakerAsync(
@@ -38,14 +39,25 @@ var circuitBreakerPolicy = HttpPolicyExtensions
         },
         onReset: () =>
         {
-            Log.Information("--- CIRCUITO FECHADO: Conectividade restabelecida com a API! ---");
+            Log.Information("--- CIRCUITO FECHADO: Conectividade restabelecida! ---");
         });
 
-// --- CONFIGURAÇÃO DO GATEWAY (YARP) ---
+// --- 3. CONFIGURAÇÃO DO GATEWAY (YARP) ---
+// Ponto de entrada único via Roteamento.
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
-// Vincula as políticas de resiliência ao cliente HTTP que o Gateway usa
+// --- 4. CONFIGURAÇÃO DA COMUNICAÇÃO ENTRE SERVIÇOS ---
+// Aqui configuramos o IHttpClientFactory para o Service A falar com o Service B (Victor).
+builder.Services.AddHttpClient("CatalogoServiceClient", client =>
+{
+    // O endereço onde o Microsserviço de Catálogo do Victor está rodando.
+    client.BaseAddress = new Uri("http://localhost:5001/"); 
+})
+.AddPolicyHandler(retryPolicy)           // Aplica Retry na comunicação interna
+.AddPolicyHandler(circuitBreakerPolicy); // Aplica Circuit Breaker na comunicação interna
+
+// Vincula também as políticas ao cliente padrão do Gateway
 builder.Services.AddHttpClient("GatewayClient")
     .AddPolicyHandler(retryPolicy)
     .AddPolicyHandler(circuitBreakerPolicy);
@@ -55,10 +67,10 @@ var app = builder.Build();
 // Ativa o roteamento do Gateway
 app.MapReverseProxy();
 
-// --- EXECUÇÃO COM MONITORAMENTO DE CICLO DE VIDA ---
+// --- 5. EXECUÇÃO E CICLO DE VIDA ---
 try
 {
-    Log.Information("Iniciando Gateway HelpDesk com Força Máxima...");
+    Log.Information("--- Gateway HelpDesk: Etapa 06 - Roteamento, Resiliência e Integração Ativos ---");
     app.Run();
 }
 catch (Exception ex)
