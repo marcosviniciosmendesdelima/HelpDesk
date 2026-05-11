@@ -1,0 +1,20 @@
+2026-05-11 17:45:19.390 -03:00 [INF] User profile is available. Using 'C:\Users\victo\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2026-05-11 17:45:19.529 -03:00 [INF] Loading proxy data from config.
+2026-05-11 17:45:19.637 -03:00 [INF] Gateway iniciado.
+2026-05-11 17:45:20.791 -03:00 [INF] Now listening on: http://localhost:5281
+2026-05-11 17:45:20.794 -03:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-05-11 17:45:20.796 -03:00 [INF] Hosting environment: Development
+2026-05-11 17:45:20.796 -03:00 [INF] Content root path: C:\Users\victo\HelpDesk\HelpDesk\HelpDesk.Gateway
+2026-05-11 17:47:41.964 -03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5281/ - null null
+2026-05-11 17:47:42.039 -03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5281/ - 404 0 null 76.9004ms
+2026-05-11 17:47:42.052 -03:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5281/, Response status code: 404
+2026-05-11 17:47:43.545 -03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5281/ - null null
+2026-05-11 17:47:43.549 -03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5281/ - 404 0 null 4.3966ms
+2026-05-11 17:47:43.555 -03:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5281/, Response status code: 404
+2026-05-11 17:50:47.725 -03:00 [INF] Request starting HTTP/1.1 GET http://localhost:5281/api/v1/chamados - null null
+2026-05-11 17:50:47.730 -03:00 [INF] Executing endpoint 'chamados_route'
+2026-05-11 17:50:47.763 -03:00 [INF] Proxying to http://localhost:5000/api/v1/chamados HTTP/2 RequestVersionOrLower 
+2026-05-11 17:50:48.037 -03:00 [INF] Received HTTP/1.1 response 307.
+2026-05-11 17:50:48.047 -03:00 [INF] Executed endpoint 'chamados_route'
+2026-05-11 17:50:48.050 -03:00 [INF] Request finished HTTP/1.1 GET http://localhost:5281/api/v1/chamados - 307 0 null 324.9347ms
+2026-05-11 17:52:16.562 -03:00 [INF] Application is shutting down...
