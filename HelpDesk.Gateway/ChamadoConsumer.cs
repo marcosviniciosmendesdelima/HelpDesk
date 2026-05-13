@@ -4,10 +4,11 @@ using System.Text;
 
 public class ChamadoConsumer
 {
-    private readonly string _hostname = "localhost";
+    // Ajustado para o nome do serviço no Docker
+    private readonly string _hostname = "rabbitmq"; 
     private readonly string _exchangeName = "chamado.criado";
 
-    public async Task EscutarEventos()
+    public void EscutarEventos()
     {
         var factory = new ConnectionFactory
         {
@@ -16,46 +17,39 @@ public class ChamadoConsumer
             Password = "guest"
         };
 
-        var connection = await factory.CreateConnectionAsync();
+        // Versão síncrona para compatibilidade com o Build atual
+        var connection = factory.CreateConnection();
+        var channel = connection.CreateModel();
 
-        var channel = await connection.CreateChannelAsync();
-
-        await channel.ExchangeDeclareAsync(
+        channel.ExchangeDeclare(
             exchange: _exchangeName,
             type: ExchangeType.Fanout
         );
 
-        var queue = await channel.QueueDeclareAsync();
+        // Declara uma fila temporária
+        var queueName = channel.QueueDeclare().QueueName;
 
-        var queueName = queue.QueueName;
-
-        await channel.QueueBindAsync(
+        channel.QueueBind(
             queue: queueName,
             exchange: _exchangeName,
             routingKey: ""
         );
 
-        Console.WriteLine("Aguardando mensagens do Python...");
+        Console.WriteLine("Gateway .NET: Aguardando mensagens do Python...");
 
-        var consumer = new AsyncEventingBasicConsumer(channel);
+        var consumer = new EventingBasicConsumer(channel);
 
-        consumer.ReceivedAsync += async (sender, ea) =>
+        consumer.Received += (sender, ea) =>
         {
             var body = ea.Body.ToArray();
-
             var message = Encoding.UTF8.GetString(body);
-
-            Console.WriteLine($"Chamado recebido: {message}");
-
-            await Task.CompletedTask;
+            Console.WriteLine($" [🚨 GATEWAY .NET] Chamado recebido do Python: {message}");
         };
 
-        await channel.BasicConsumeAsync(
+        channel.BasicConsume(
             queue: queueName,
             autoAck: true,
             consumer: consumer
         );
-
-        await Task.Delay(Timeout.Infinite);
     }
 }

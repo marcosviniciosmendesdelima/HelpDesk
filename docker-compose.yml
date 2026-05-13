@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # 1. BROKER DE MENSAGENS (Etapa 7.1)
+  # 1. BROKER DE MENSAGENS (Mensageria entre Microsserviços)
   rabbitmq:
     image: rabbitmq:3-management
     container_name: helpdesk-rabbitmq
@@ -11,7 +11,7 @@ services:
     networks:
       - helpdesk-internal-net
 
-  # 2. O GATEWAY
+  # 2. SERVICE B / GATEWAY (.NET - Parte do Vitor/Luis)
   gateway:
     build:
       context: .
@@ -25,7 +25,7 @@ services:
     networks:
       - helpdesk-internal-net
 
-  # 3. SERVICE A (API)
+  # 3. SERVICE A (API Python - Sua Parte)
   api-helpdesk:
     build:
       context: .
@@ -42,7 +42,7 @@ services:
     networks:
       - helpdesk-internal-net
 
-  # 4. BANCO DE DADOS
+  # 4. BANCO DE DADOS (PostgreSQL)
   db-helpdesk:
     image: postgres:15-alpine
     container_name: helpdesk-db
@@ -60,8 +60,4 @@ networks:
     driver: bridge
 
 volumes:
-<<<<<<< HEAD
   helpdesk-data:
-=======
-  helpdesk-data:
->>>>>>> main

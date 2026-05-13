@@ -4,7 +4,7 @@ using Polly.Extensions.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. CONFIGURAÇÃO DE OBSERVABILIDADE (SERILOG) ---
+// Configura os logs pra gente ver o que rola no console e no arquivo
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .WriteTo.File("logs/gateway-audit.txt", rollingInterval: RollingInterval.Day)
@@ -12,35 +12,18 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// --- 2. POLÍTICAS DE RESILIÊNCIA (POLLY) ---
+// Se a rede der soluço, tenta 3 vezes antes de desistir
 var retryPolicy = HttpPolicyExtensions
     .HandleTransientHttpError()
-    .WaitAndRetryAsync(
-        3,
-        _ => TimeSpan.FromSeconds(2),
-        (result, timeSpan, retryCount, context) =>
-        {
-            Log.Warning($"[RETRY] Tentativa {retryCount} falhou.");
-        });
+    .WaitAndRetryAsync(3, _ => TimeSpan.FromSeconds(2));
 
+// Se o outro serviço cair feio, o "disjuntor" abre por 15 segundos pra não travar tudo
 var circuitBreakerPolicy = HttpPolicyExtensions
     .HandleTransientHttpError()
-    .CircuitBreakerAsync(
-        handledEventsAllowedBeforeBreaking: 3,
-        durationOfBreak: TimeSpan.FromSeconds(15)
-    );
+    .CircuitBreakerAsync(3, TimeSpan.FromSeconds(15));
 
-// --- 3. CONFIGURAÇÃO DO GATEWAY (YARP) ---
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
-
-// --- 4. HTTP CLIENTS ---
-builder.Services.AddHttpClient("CatalogoServiceClient", client =>
-{
-    client.BaseAddress = new Uri("http://localhost:5001/");
-})
-.AddPolicyHandler(retryPolicy)
-.AddPolicyHandler(circuitBreakerPolicy);
 
 builder.Services.AddHttpClient("GatewayClient")
     .AddPolicyHandler(retryPolicy)
@@ -50,28 +33,31 @@ var app = builder.Build();
 
 app.MapReverseProxy();
 
-
-// ===============================
-// RABBITMQ CONSUMER
-// ===============================
+// Liga o carinha que fica ouvindo as mensagens do RabbitMQ
 var consumer = new ChamadoConsumer();
 
-_ = Task.Run(async () =>
+Task.Run(() =>
 {
-    await consumer.EscutarEventos();
+    try
+    {
+        Log.Information("Ouvindo as mensagens que chegam do RabbitMQ...");
+        consumer.EscutarEventos();
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Deu ruim ao tentar ouvir o RabbitMQ.");
+    }
 });
 
-
-// --- EXECUÇÃO ---
+// Coloca o Gateway pra rodar de fato
 try
 {
-    Log.Information("Gateway iniciado.");
-
+    Log.Information("Tudo pronto! Gateway no ar.");
     app.Run();
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Erro ao iniciar gateway.");
+    Log.Fatal(ex, "O Gateway não conseguiu subir.");
 }
 finally
 {
