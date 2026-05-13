@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # 1. BROKER DE MENSAGENS (Mensageria entre Microsserviços)
+  # 1. BROKER DE MENSAGENS (Simplificado para não travar)
   rabbitmq:
     image: rabbitmq:3-management
     container_name: helpdesk-rabbitmq
@@ -11,7 +11,7 @@ services:
     networks:
       - helpdesk-internal-net
 
-  # 2. SERVICE B / GATEWAY (.NET - Parte do Vitor/Luis)
+  # 2. GATEWAY (.NET)
   gateway:
     build:
       context: .
@@ -21,16 +21,17 @@ services:
       - "5281:80"
     depends_on:
       - rabbitmq
-      - api-helpdesk
     networks:
       - helpdesk-internal-net
 
-  # 3. SERVICE A (API Python - Sua Parte)
+  # 3. API PYTHON 
   api-helpdesk:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: helpdesk-api
+    ports:
+      - "8000:80"
     environment:
       DATABASE_URL: postgresql://postgres:SenhaForte123@db-helpdesk:5432/postgres
       RABBITMQ_HOST: rabbitmq
