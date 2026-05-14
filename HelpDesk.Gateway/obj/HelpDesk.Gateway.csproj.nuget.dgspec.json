@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/Users/viniciusmendes/Desktop/helpdesk-tickets/HelpDesk.Gateway/HelpDesk.Gateway.csproj": {}
+    "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj": {}
   },
   "projects": {
-    "/Users/viniciusmendes/Desktop/helpdesk-tickets/HelpDesk.Gateway/HelpDesk.Gateway.csproj": {
+    "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/viniciusmendes/Desktop/helpdesk-tickets/HelpDesk.Gateway/HelpDesk.Gateway.csproj",
+        "projectUniqueName": "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
         "projectName": "HelpDesk.Gateway",
-        "projectPath": "/Users/viniciusmendes/Desktop/helpdesk-tickets/HelpDesk.Gateway/HelpDesk.Gateway.csproj",
-        "packagesPath": "/Users/viniciusmendes/.nuget/packages/",
-        "outputPath": "/Users/viniciusmendes/Desktop/helpdesk-tickets/HelpDesk.Gateway/obj/",
+        "projectPath": "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
+        "packagesPath": "C:\\Users\\victo\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/viniciusmendes/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\victo\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -43,6 +43,18 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Dapper": {
+              "target": "Package",
+              "version": "[2.1.72, )"
+            },
+            "Npgsql": {
+              "target": "Package",
+              "version": "[10.0.2, )"
+            },
+            "RabbitMQ.Client": {
+              "target": "Package",
+              "version": "[6.8.1, )"
+            },
             "Yarp.ReverseProxy": {
               "target": "Package",
               "version": "[2.3.0, )"
@@ -67,7 +79,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.420/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.420/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
