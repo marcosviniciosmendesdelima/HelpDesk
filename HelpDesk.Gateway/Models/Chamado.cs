@@ -1,13 +1,26 @@
+using System;
+using System.Text.Json.Serialization; // Adicione esta linha!
+
 namespace HelpDesk.Gateway.Models
 {
     public class Chamado
     {
-        public int Id { get; set; }
+        [JsonPropertyName("id")]
+        public Guid Id { get; set; }
 
-        public string Titulo { get; set; }
+        [JsonPropertyName("titulo")]
+        public string Titulo { get; set; } = string.Empty;
 
-        public string Descricao { get; set; }
+        [JsonPropertyName("descricao")]
+        public string Descricao { get; set; } = string.Empty;
 
-        public DateTime DataCriacao { get; set; }
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = "Aberto";
+
+        [JsonPropertyName("prioridade")]
+        public string Prioridade { get; set; } = "Média";
+
+        [JsonPropertyName("datacriacao")]
+        public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
     }
 }
