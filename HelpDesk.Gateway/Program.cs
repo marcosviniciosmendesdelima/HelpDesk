@@ -1,5 +1,6 @@
 using HelpDesk.Gateway.Workers;
-using HelpDesk.Gateway.Services; // 1. Adicionado para o .NET reconhecer a pasta de serviços
+using HelpDesk.Gateway.Services; 
+using HelpDesk.Gateway.Hubs; // <-- 1. ADICIONADO: Namespace para o .NET encontrar o TicketHub 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,36 +8,43 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
-// REGISTRA O WORKER DO RABBITMQ (Corrigido para o nome correto da classe da Etapa 8)
+// REGISTRA O WORKER DO RABBITMQ
 builder.Services.AddHostedService<TicketCreatedConsumer>();
 
-// ============================================================================
-// CONFIGURAÇÕES ADICIONADAS PARA A ETAPA 9.1 (CACHE DISTRIBUÍDO)
-// ============================================================================
-
-// 2. Configura a conexão com o container Redis que declaramos no docker-compose
+// CONFIGURAÇÕES DA ETAPA 9.1 (CACHE DISTRIBUÍDO)
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = "helpdesk-cache:6379";
-    options.InstanceName = "HelpDesk:"; // Prefixo para organizar as chaves no Redis
+    options.InstanceName = "HelpDesk:"; 
 });
 
-// 3. Registra o serviço customizado de cache na Injeção de Dependência do .NET
 builder.Services.AddScoped<ITicketCacheService, TicketCacheService>();
 
+// CONFIGURAÇÕES DA ETAPA 9.2 (MAPEAMENTO DE CONTROLLERS)
+builder.Services.AddControllers(); 
+
 // ============================================================================
-// CONFIGURAÇÕES ADICIONADAS PARA A ETAPA 9.2 (MAPEAMENTO DE CONTROLLERS)
+// CONFIGURAÇÕES ADICIONADAS PARA A ETAPA 10.1 (SIGNALR - TEMPO REAL)
 // ============================================================================
 
-// 4. Habilita o suporte aos Controllers tradicionais do ASP.NET Core
-builder.Services.AddControllers(); // <-- ADICIONADO AQUI 🚀
+// 2. Injeta o motor de conexões persistentes do SignalR no .NET Core
+builder.Services.AddSignalR(); // <-- ADICIONADO AQUI 
 
 // ============================================================================
 
 var app = builder.Build();
 
-// 5. Mapeia as rotas dos controllers customizados locais antes do proxy interceptar tudo
-app.MapControllers(); // <-- ADICIONADO AQUI 🚀
+// Mapeia as rotas dos controllers customizados locais
+app.MapControllers(); 
+
+// ============================================================================
+// MAPEAMENTO DO HUB DO SIGNALR (ETAPA 10.1)
+// ============================================================================
+
+// 3. Mapeia o endpoint TCP que o frontend Angular usará para fechar a conexão WebSocket
+app.MapHub<TicketHub>("/hubs/tickets"); // <-- ADICIONADO AQUI 
+
+// ============================================================================
 
 // Ativa o roteamento do Gateway (YARP)
 app.MapReverseProxy();

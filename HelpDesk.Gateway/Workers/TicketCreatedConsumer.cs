@@ -5,20 +5,24 @@ using Npgsql;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Microsoft.Extensions.Hosting;
-using HelpDesk.Gateway.Services; // Adicionado para reconhecer a camada de cache
+using HelpDesk.Gateway.Services; // Reconhece a camada de cache (Etapa 9)
+using HelpDesk.Gateway.Hubs;     // <-- ADICIONADO: Reconhece o seu TicketHub (Etapa 10.1) 🚀
+using Microsoft.AspNetCore.SignalR; // <-- ADICIONADO: Permite usar o contexto do SignalR (Etapa 10.1) 🚀
 
 namespace HelpDesk.Gateway.Workers
 {
     public class TicketCreatedConsumer : BackgroundService
     {
-        private readonly ITicketCacheService _cacheService; // Injetando o serviço de cache
+        private readonly ITicketCacheService _cacheService; // Serviço de cache
+        private readonly IHubContext<TicketHub> _hubContext; // <-- ADICIONADO: Contexto do SignalR 🚀
         private readonly string _connectionString = "Host=helpdesk-db;Port=5432;Database=postgres;Username=postgres;Password=SenhaForte123;";
         private const string QueueName = "ticket_created";
 
-        // Construtor atualizado para receber a Injeção de Dependência do Cache
-        public TicketCreatedConsumer(ITicketCacheService cacheService)
+        // Construtor atualizado recebendo o Cache e o Hub do SignalR via Injeção de Dependência
+        public TicketCreatedConsumer(ITicketCacheService cacheService, IHubContext<TicketHub> hubContext)
         {
             _cacheService = cacheService;
+            _hubContext = hubContext; // <-- ADICIONADO 🚀
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -91,6 +95,26 @@ namespace HelpDesk.Gateway.Workers
                     // INVALIDAÇÃO DO CACHE: Remove a chave antiga do Redis na hora para manter a consistência de dados
                     await _cacheService.RemoveTicketCacheAsync("tickets:all");
                     Console.WriteLine(" [Redis] Cache de tickets limpo e invalidado devido a uma nova insercao via RabbitMQ.");
+
+                    // ============================================================================
+                    // 🚀 EXECUTANDO A ETAPA 10.1: DISPARO SERVER-PUSH EM TEMPO REAL VIA WEBSOCKET
+                    // ============================================================================
+                    
+                    // Descobre o nome exato da sala/grupo usando a regra estática que você definiu no TicketHub.cs
+                    string salaDoTicket = TicketHub.ObterNomeDoGrupo(id);
+
+                    // Envia os dados do ticket de forma assíncrona apenas para quem estiver ouvindo essa sala específica
+                    await _hubContext.Clients.Group(salaDoTicket).SendAsync("OnTicketStatusChanged", new {
+                        ticketId = id,
+                        titulo = titulo,
+                        status = status,
+                        prioridade = prioridade,
+                        notificadoEm = DateTime.UtcNow,
+                        mensagem = "O painel deste ticket foi atualizado reativamente em tempo real!"
+                    });
+
+                    Console.WriteLine($" [SignalR] Notificação em tempo real enviada com sucesso para a sala '{salaDoTicket}'.");
+                    // ============================================================================
                 }
                 catch (Exception ex)
                 {
