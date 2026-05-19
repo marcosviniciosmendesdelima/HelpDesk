@@ -5,15 +5,21 @@ using Npgsql;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Microsoft.Extensions.Hosting;
+using HelpDesk.Gateway.Services; // Adicionado para reconhecer a camada de cache
 
 namespace HelpDesk.Gateway.Workers
 {
     public class TicketCreatedConsumer : BackgroundService
     {
-        // LINHA INSERIDA: Agora com a senha 'SenhaForte123' para bater com o Docker
+        private readonly ITicketCacheService _cacheService; // Injetando o serviço de cache
         private readonly string _connectionString = "Host=helpdesk-db;Port=5432;Database=postgres;Username=postgres;Password=SenhaForte123;";
-        
         private const string QueueName = "ticket_created";
+
+        // Construtor atualizado para receber a Injeção de Dependência do Cache
+        public TicketCreatedConsumer(ITicketCacheService cacheService)
+        {
+            _cacheService = cacheService;
+        }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -81,6 +87,10 @@ namespace HelpDesk.Gateway.Workers
 
                     await db.ExecuteAsync(sql, ticketData);
                     Console.WriteLine($" [Gateway] SUCESSO: Ticket '{titulo}' sincronizado com o banco de leitura!");
+
+                    // INVALIDAÇÃO DO CACHE: Remove a chave antiga do Redis na hora para manter a consistência de dados
+                    await _cacheService.RemoveTicketCacheAsync("tickets:all");
+                    Console.WriteLine(" [Redis] Cache de tickets limpo e invalidado devido a uma nova insercao via RabbitMQ.");
                 }
                 catch (Exception ex)
                 {

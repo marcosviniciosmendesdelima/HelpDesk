@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # 1. BROKER DE MENSAGENS (Simplificado para não travar)
+  # 1. BROKER DE MENSAGENS
   rabbitmq:
     image: rabbitmq:3-management
     container_name: helpdesk-rabbitmq
@@ -18,7 +18,7 @@ services:
       dockerfile: HelpDesk.Gateway/Dockerfile
     container_name: helpdesk-gateway
     ports:
-      - "5281:80"
+      - "5281:8080" # Alterado de 80 para 8080 para alinhar com o .NET 8
     depends_on:
       - rabbitmq
     networks:
@@ -56,7 +56,7 @@ services:
     networks:
       - helpdesk-internal-net
 
-  # 5. CACHE DISTRIBUÍDO (Redis) - NOVO ADICIONADO/ ETAPA 9
+  # 5. CACHE DISTRIBUÍDO (Redis)
   helpdesk-cache:
     image: redis:7-alpine
     container_name: helpdesk-cache

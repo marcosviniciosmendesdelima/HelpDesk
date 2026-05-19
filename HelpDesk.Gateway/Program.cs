@@ -25,10 +25,20 @@ builder.Services.AddStackExchangeRedisCache(options =>
 builder.Services.AddScoped<ITicketCacheService, TicketCacheService>();
 
 // ============================================================================
+// CONFIGURAÇÕES ADICIONADAS PARA A ETAPA 9.2 (MAPEAMENTO DE CONTROLLERS)
+// ============================================================================
+
+// 4. Habilita o suporte aos Controllers tradicionais do ASP.NET Core
+builder.Services.AddControllers(); // <-- ADICIONADO AQUI 🚀
+
+// ============================================================================
 
 var app = builder.Build();
 
-// Ativa o roteamento do Gateway
+// 5. Mapeia as rotas dos controllers customizados locais antes do proxy interceptar tudo
+app.MapControllers(); // <-- ADICIONADO AQUI 🚀
+
+// Ativa o roteamento do Gateway (YARP)
 app.MapReverseProxy();
 
 app.Run();
