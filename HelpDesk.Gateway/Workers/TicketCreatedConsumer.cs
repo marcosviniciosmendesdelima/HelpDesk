@@ -4,6 +4,9 @@ using Dapper;
 using Npgsql;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using Microsoft.AspNetCore.SignalR; 
+using HelpDesk.Gateway.Hubs;       
+using Microsoft.Extensions.DependencyInjection; 
 
 namespace HelpDesk.Gateway.Workers;
 
@@ -11,10 +14,12 @@ public class TicketCreatedConsumer : BackgroundService
 {
     private readonly IConfiguration _config;
     private readonly string _connectionString;
+    private readonly IServiceProvider _serviceProvider; 
 
-    public TicketCreatedConsumer(IConfiguration config)
+    public TicketCreatedConsumer(IConfiguration config, IServiceProvider serviceProvider)
     {
         _config = config;
+        _serviceProvider = serviceProvider; 
 
         _connectionString = _config.GetConnectionString("DefaultConnection")
             ?? throw new Exception("Connection string não encontrada.");
@@ -22,26 +27,28 @@ public class TicketCreatedConsumer : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Conexão com RabbitMQ
-        var factory = new ConnectionFactory()
+        var factory = new ConnectionFactory() { HostName = "helpdesk-rabbitmq" };
+        IConnection connection = null;
+        int tentativas = 0;
+
+        while (connection == null && !stoppingToken.IsCancellationRequested && tentativas < 10)
         {
-            HostName = "localhost"
+            try
+            {
+                tentativas++;
+                connection = factory.CreateConnection();
+            }
+            catch (RabbitMQ.Client.Exceptions.BrokerUnreachableException)
+            {
+                Console.WriteLine($"[Gateway] Aguardando RabbitMQ... Tentativa {tentativas}/10");
+                await Task.Delay(5000, stoppingToken); 
+            }
+        }
 
-            // Se estiver usando Docker:
-            // HostName = "rabbitmq"
-        };
+        using var currentConnection = connection;
+        using var channel = currentConnection.CreateModel();
 
-        using var connection = factory.CreateConnection();
-        using var channel = connection.CreateModel();
-
-        // Cria fila se não existir
-        channel.QueueDeclare(
-            queue: "fila_tickets",
-            durable: true,
-            exclusive: false,
-            autoDelete: false
-        );
-
+        channel.QueueDeclare(queue: "fila_tickets", durable: true, exclusive: false, autoDelete: false);
         var consumer = new EventingBasicConsumer(channel);
 
         consumer.Received += async (model, ea) =>
@@ -53,54 +60,54 @@ public class TicketCreatedConsumer : BackgroundService
 
                 Console.WriteLine($"Mensagem recebida: {message}");
 
-                // Converte JSON para objeto C#
-                var ticketData = JsonSerializer.Deserialize<TicketReadModel>(message);
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var ticketData = JsonSerializer.Deserialize<TicketReadModel>(message, options);
 
                 if (ticketData != null)
                 {
-                    // Conexão com banco
-                    using var db = new NpgsqlConnection(_connectionString);
+                    Console.WriteLine($"[Gateway] Objeto convertido! Id: {ticketData.Id}, Status: {ticketData.Status}");
 
-                    // SQL corrigido para PostgreSQL
-                    var sql = @"
-                        INSERT INTO ""TicketsRead""
-                        (""Id"", ""Titulo"", ""Descricao"", ""Prioridade"", ""Status"")
-                        VALUES
-                        (@Id, @Titulo, @Descricao, @Prioridade, @Status)
-                    ";
+                    // DISPARO SIGNALR VIA ESCOPO (FUNCIONANDO!)
+                    using (var scope = _serviceProvider.CreateScope())
+                    {
+                        var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<TicketsHub>>();
+                        
+                        var payloadNotificacao = new Dictionary<string, string>
+                        {
+                            { "ticketId", ticketData.Id ?? "Sem ID" },
+                            { "status", ticketData.Status ?? "Sem Status" }
+                        };
 
-                    await db.ExecuteAsync(sql, ticketData);
+                        await hubContext.Clients.All.SendAsync("OnTicketStatusChanged", payloadNotificacao);
+                        Console.WriteLine($"[Gateway] Notificação enviada via WebSocket para o Navegador!");
+                    }
 
-                    Console.WriteLine($"[Gateway] Ticket {ticketData.Id} sincronizado!");
+                    // Grava no banco
+                    try
+                    {
+                        using var db = new NpgsqlConnection(_connectionString);
+                        var sql = @"INSERT INTO ""TicketsRead"" (""Id"", ""Titulo"", ""Descricao"", ""Prioridade"", ""Status"") 
+                                    VALUES (@Id, @Titulo, @Descricao, @Prioridade, @Status)";
+                        await db.ExecuteAsync(sql, ticketData);
+                        Console.WriteLine($"[Gateway] Ticket {ticketData.Id} sincronizado no Banco!");
+                    }
+                    catch (Exception dbEx)
+                    {
+                        Console.WriteLine($"[Gateway] Erro no banco (Ignorado para o Real-time): {dbEx.Message}");
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erro ao processar mensagem: {ex.Message}");
+                Console.WriteLine($"Erro crítico ao processar mensagem: {ex.Message}");
             }
         };
 
-        // Escuta a fila
-        channel.BasicConsume(
-            queue: "fila_tickets",
-            autoAck: true,
-            consumer: consumer
-        );
-
+        channel.BasicConsume(queue: "fila_tickets", autoAck: true, consumer: consumer);
         Console.WriteLine("Ouvindo mensagens do RabbitMQ...");
 
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            await Task.Delay(1000, stoppingToken);
-        }
+        while (!stoppingToken.IsCancellationRequested) { await Task.Delay(1000, stoppingToken); }
     }
 }
 
-// Modelo usado pelo Dapper
-public record TicketReadModel(
-    string Id,
-    string Titulo,
-    string Descricao,
-    string Prioridade,
-    string Status
-);
+public record TicketReadModel(string Id, string Titulo, string Descricao, string Prioridade, string Status);

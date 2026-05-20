@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj": {}
+    "/app/HelpDesk.Gateway.csproj": {}
   },
   "projects": {
-    "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj": {
+    "/app/HelpDesk.Gateway.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
+        "projectUniqueName": "/app/HelpDesk.Gateway.csproj",
         "projectName": "HelpDesk.Gateway",
-        "projectPath": "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
-        "packagesPath": "C:\\Users\\victo\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\obj\\",
+        "projectPath": "/app/HelpDesk.Gateway.csproj",
+        "packagesPath": "/root/.nuget/packages/",
+        "outputPath": "/app/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\victo\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/root/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -79,7 +79,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.420/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.421/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
