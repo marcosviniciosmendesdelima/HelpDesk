@@ -1,55 +1,99 @@
 using System.Text;
 using System.Text.Json;
+
 using Dapper;
 using Npgsql;
+
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using HelpDesk.Gateway.Services; // Reconhece a camada de cache (Etapa 9)
-using HelpDesk.Gateway.Hubs;     // <-- ADICIONADO: Reconhece o seu TicketHub (Etapa 10.1) 🚀
-using Microsoft.AspNetCore.SignalR; // <-- ADICIONADO: Permite usar o contexto do SignalR (Etapa 10.1) 🚀
+using Microsoft.Extensions.Configuration;
+
+using HelpDesk.Gateway.Hubs;
+using HelpDesk.Gateway.Services;
+
+using Serilog;
 
 namespace HelpDesk.Gateway.Workers
 {
     public class TicketCreatedConsumer : BackgroundService
     {
-        private readonly ITicketCacheService _cacheService; // Serviço de cache
-        private readonly IHubContext<TicketHub> _hubContext; // <-- ADICIONADO: Contexto do SignalR 🚀
-        private readonly string _connectionString = "Host=helpdesk-db;Port=5432;Database=postgres;Username=postgres;Password=SenhaForte123;";
-        private const string QueueName = "ticket_created";
+        private readonly IConfiguration _config;
+        private readonly IServiceProvider _serviceProvider;
 
-        // Construtor atualizado recebendo o Cache e o Hub do SignalR via Injeção de Dependência
-        public TicketCreatedConsumer(ITicketCacheService cacheService, IHubContext<TicketHub> hubContext)
+        private readonly string _connectionString;
+
+        public TicketCreatedConsumer(
+            IConfiguration config,
+            IServiceProvider serviceProvider)
         {
-            _cacheService = cacheService;
-            _hubContext = hubContext; // <-- ADICIONADO 🚀
+            _config = config;
+            _serviceProvider = serviceProvider;
+
+            _connectionString = _config.GetConnectionString("DefaultConnection")
+                ?? throw new Exception("Connection string não encontrada.");
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            IConnection? connection = null;
-            IModel? channel = null;
+            string? configHost = _config["RabbitMQ:Host"];
 
-            // Loop de conexão ao RabbitMQ
-            while (!stoppingToken.IsCancellationRequested && connection == null)
+            string rabbitHost = !string.IsNullOrEmpty(configHost)
+                ? configHost
+                : "localhost";
+
+            if (rabbitHost == "helpdesk-rabbitmq" &&
+                !Environment.GetEnvironmentVariables()
+                    .Contains("DOTNET_RUNNING_IN_CONTAINER"))
+            {
+                rabbitHost = "localhost";
+            }
+
+            var factory = new ConnectionFactory()
+            {
+                HostName = rabbitHost,
+                DispatchConsumersAsync = true
+            };
+
+            IConnection? connection = null;
+            int tentativas = 0;
+
+            Log.Information("Tentando conectar ao RabbitMQ em {Host}", rabbitHost);
+
+            while (connection == null &&
+                   !stoppingToken.IsCancellationRequested &&
+                   tentativas < 10)
             {
                 try
                 {
-                    var factory = new ConnectionFactory() { HostName = "rabbitmq", DispatchConsumersAsync = true };
+                    tentativas++;
+
                     connection = factory.CreateConnection();
-                    channel = connection.CreateModel();
-                    Console.WriteLine(" [*] SUCESSO: Gateway conectado ao RabbitMQ!");
+
+                    Log.Information("RabbitMQ conectado com sucesso");
                 }
-                catch
+                catch (Exception ex)
                 {
-                    Console.WriteLine(" [!] Aguardando RabbitMQ ficar pronto...");
+                    Log.Warning(ex, "RabbitMQ indisponível. Tentando novamente em 5s...");
                     await Task.Delay(5000, stoppingToken);
                 }
             }
 
-            if (channel == null) return;
+            if (connection == null)
+            {
+                Log.Fatal("Falha ao conectar no RabbitMQ após múltiplas tentativas.");
+                return;
+            }
 
-            channel.QueueDeclare(queue: QueueName, durable: true, exclusive: false, autoDelete: false);
+            using var currentConnection = connection;
+            using var channel = currentConnection.CreateModel();
+
+            const string queueName = "fila_tickets";
+
+            channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: false);
 
             var consumer = new AsyncEventingBasicConsumer(channel);
 
@@ -57,72 +101,111 @@ namespace HelpDesk.Gateway.Workers
             {
                 try
                 {
-                    var body = ea.Body.ToArray();
-                    var message = Encoding.UTF8.GetString(body);
-                    Console.WriteLine($"[*] Mensagem recebida: {message}");
+                    var message = Encoding.UTF8.GetString(ea.Body.ToArray());
 
-                    using var doc = JsonDocument.Parse(message);
-                    var root = doc.RootElement;
+                    Log.Information("Mensagem recebida: {Message}", message);
 
-                    // Extração de dados com tratamento para campos nulos
-                    var id = root.TryGetProperty("id", out var idProp) ? idProp.GetGuid() : Guid.NewGuid();
-                    var titulo = root.GetProperty("titulo").GetString() ?? "Sem Título";
-                    var descricao = root.GetProperty("descricao").GetString() ?? "Sem Descrição";
-                    var status = root.TryGetProperty("status", out var sProp) ? sProp.GetString() : "Aberto";
-                    
-                    string prioridade = "Média";
-                    if (root.TryGetProperty("prioridade", out var p)) prioridade = p.GetString() ?? "Média";
-                    else if (root.TryGetProperty("prioridade_valor", out var pv)) prioridade = pv.GetString() ?? "Média";
+                    var ticketData = JsonSerializer.Deserialize<TicketReadModel>(
+                        message,
+                        new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
 
-                    var ticketData = new {
-                        id = id,
-                        titulo = titulo,
-                        descricao = descricao,
-                        status = status,
-                        prioridade = prioridade
-                    };
+                    if (ticketData == null)
+                    {
+                        Log.Warning("Mensagem inválida recebida");
+                        return;
+                    }
 
-                    using var db = new NpgsqlConnection(_connectionString);
-                    
-                    // Comando SQL para inserir ou ignorar se o ID já existir
-                    var sql = @"INSERT INTO TicketsRead (id, titulo, descricao, status, prioridade)
-                                VALUES (@id, @titulo, @descricao, @status, @prioridade)
-                                ON CONFLICT (id) DO NOTHING;";
+                    // ============================================================
+                    // POSTGRES
+                    // ============================================================
 
-                    await db.ExecuteAsync(sql, ticketData);
-                    Console.WriteLine($" [Gateway] SUCESSO: Ticket '{titulo}' sincronizado com o banco de leitura!");
+                    try
+                    {
+                        using var db = new NpgsqlConnection(_connectionString);
 
-                    // INVALIDAÇÃO DO CACHE: Remove a chave antiga do Redis na hora para manter a consistência de dados
-                    await _cacheService.RemoveTicketCacheAsync("tickets:all");
-                    Console.WriteLine(" [Redis] Cache de tickets limpo e invalidado devido a uma nova insercao via RabbitMQ.");
+                        var sql = @"
+                            INSERT INTO ""TicketsRead""
+                            (
+                                ""Id"",
+                                ""Titulo"",
+                                ""Descricao"",
+                                ""Prioridade"",
+                                ""Status""
+                            )
+                            VALUES
+                            (
+                                @Id,
+                                @Titulo,
+                                @Descricao,
+                                @Prioridade,
+                                @Status
+                            )
+                            ON CONFLICT (""Id"") DO NOTHING;
+                        ";
 
-                    // ============================================================================
-                    // 🚀 EXECUTANDO A ETAPA 10.1: DISPARO SERVER-PUSH EM TEMPO REAL VIA WEBSOCKET
-                    // ============================================================================
-                    
-                    // Descobre o nome exato da sala/grupo usando a regra estática que você definiu no TicketHub.cs
-                    string salaDoTicket = TicketHub.ObterNomeDoGrupo(id);
+                        await db.ExecuteAsync(sql, ticketData);
 
-                    // Envia os dados do ticket de forma assíncrona apenas para quem estiver ouvindo essa sala específica
-                    await _hubContext.Clients.Group(salaDoTicket).SendAsync("OnTicketStatusChanged", new {
-                        ticketId = id,
-                        titulo = titulo,
-                        status = status,
-                        prioridade = prioridade,
-                        notificadoEm = DateTime.UtcNow,
-                        mensagem = "O painel deste ticket foi atualizado reativamente em tempo real!"
-                    });
+                        Log.Information("Ticket salvo no PostgreSQL: {Id}", ticketData.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Erro ao salvar no PostgreSQL");
+                    }
 
-                    Console.WriteLine($" [SignalR] Notificação em tempo real enviada com sucesso para a sala '{salaDoTicket}'.");
-                    // ============================================================================
+                    // ============================================================
+                    // CACHE REDIS (CORRIGIDO - SCOPED SAFE)
+                    // ============================================================
+
+                    using (var scope = _serviceProvider.CreateScope())
+                    {
+                        var cacheService =
+                            scope.ServiceProvider.GetRequiredService<ITicketCacheService>();
+
+                        await cacheService.RemoveTicketCacheAsync("tickets:all");
+                    }
+
+                    Log.Information("Cache invalidado");
+
+                    // ============================================================
+                    // SIGNALR
+                    // ============================================================
+
+                    using (var scope = _serviceProvider.CreateScope())
+                    {
+                        var hubContext =
+                            scope.ServiceProvider.GetRequiredService<IHubContext<TicketHub>>();
+
+                        Guid ticketGuid = Guid.Parse(ticketData.Id);
+
+                        string grupo = TicketHub.ObterNomeDoGrupo(ticketGuid);
+
+                        await hubContext.Clients
+                            .Group(grupo)
+                            .SendAsync("OnTicketStatusChanged", new
+                            {
+                                ticketId = ticketData.Id,
+                                titulo = ticketData.Titulo,
+                                status = ticketData.Status,
+                                prioridade = ticketData.Prioridade,
+                                notificadoEm = DateTime.UtcNow,
+                                mensagem = "Ticket atualizado em tempo real"
+                            });
+
+                        Log.Information("SignalR enviado para grupo {Grupo}", grupo);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($" [!] ERRO AO PROCESSAR: {ex.Message}");
+                    Log.Error(ex, "Erro crítico no consumer");
                 }
             };
 
-            channel.BasicConsume(queue: QueueName, autoAck: true, consumer: consumer);
+            channel.BasicConsume(queueName, autoAck: true, consumer);
+
+            Log.Information("Consumer iniciado na fila {Queue}", queueName);
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -130,4 +213,11 @@ namespace HelpDesk.Gateway.Workers
             }
         }
     }
+
+    public record TicketReadModel(
+        string Id,
+        string Titulo,
+        string Descricao,
+        string Prioridade,
+        string Status);
 }

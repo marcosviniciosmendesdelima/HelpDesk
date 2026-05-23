@@ -29,7 +29,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+<<<<<<< HEAD
     container_name: helpdesk-api
+=======
+    container_name: helpdesk-api-helpdesk-1
+>>>>>>> 1b56b8ca367133de7db8e3388180714aa33b6e6c
     ports:
       - "8000:80"
     environment:
@@ -46,7 +50,11 @@ services:
   # 4. BANCO DE DADOS (PostgreSQL)
   db-helpdesk:
     image: postgres:15-alpine
+<<<<<<< HEAD
     container_name: helpdesk-db
+=======
+    container_name: helpdesk-db-helpdesk-1
+>>>>>>> 1b56b8ca367133de7db8e3388180714aa33b6e6c
     environment:
       POSTGRES_PASSWORD: SenhaForte123
     ports:
@@ -68,6 +76,34 @@ services:
 networks:
   helpdesk-internal-net:
     driver: bridge
+
+  helpdesk-cache:
+    image: redis:7-alpine
+    container_name: helpdesk-cache
+    ports:
+      - "6379:6379"
+
+  helpdesk-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: helpdesk-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  helpdesk-gateway:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    container_name: helpdesk-gateway
+    ports:
+      - "5281:8080"
+    volumes:
+      - ./HelpDesk.Gateway:/app
+    working_dir: /app
+    command: dotnet watch run --urls http://0.0.0.0:8080
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - helpdesk-cache
+      - helpdesk-rabbitmq
 
 volumes:
   helpdesk-data:
