@@ -1254,7 +1254,7 @@
           }
         }
       },
-      "Polly.Core/8.4.2": {
+      "Polly.Core/8.6.6": {
         "type": "package",
         "compile": {
           "lib/net8.0/Polly.Core.dll": {
@@ -1267,12 +1267,12 @@
           }
         }
       },
-      "Polly.Extensions/8.4.2": {
+      "Polly.Extensions/8.6.6": {
         "type": "package",
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "8.0.0",
           "Microsoft.Extensions.Options": "8.0.0",
-          "Polly.Core": "8.4.2"
+          "Polly.Core": "8.6.6"
         },
         "compile": {
           "lib/net8.0/Polly.Extensions.dll": {
@@ -3645,13 +3645,14 @@
         "polly.nuspec"
       ]
     },
-    "Polly.Core/8.4.2": {
-      "sha512": "BpE2I6HBYYA5tF0Vn4eoQOGYTYIK1BlF5EXVgkWGn3mqUUjbXAr13J6fZVbp7Q3epRR8yshacBMlsHMhpOiV3g==",
+    "Polly.Core/8.6.6": {
+      "sha512": "lCBL9mmhF9TZxHG3beVRkyjlLohkIC464xIAq7J7Y59C+z42hmsdUaeCKl2SIAYertOUU5TeBXyQDLDQGIKePQ==",
       "type": "package",
-      "path": "polly.core/8.4.2",
+      "path": "polly.core/8.6.6",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
+        "LICENSE",
         "lib/net462/Polly.Core.dll",
         "lib/net462/Polly.Core.pdb",
         "lib/net462/Polly.Core.xml",
@@ -3669,17 +3670,18 @@
         "lib/netstandard2.0/Polly.Core.xml",
         "package-icon.png",
         "package-readme.md",
-        "polly.core.8.4.2.nupkg.sha512",
+        "polly.core.8.6.6.nupkg.sha512",
         "polly.core.nuspec"
       ]
     },
-    "Polly.Extensions/8.4.2": {
-      "sha512": "GZ9vRVmR0jV2JtZavt+pGUsQ1O1cuRKG7R7VOZI6ZDy9y6RNPvRvXK1tuS4ffUrv8L0FTea59oEuQzgS0R7zSA==",
+    "Polly.Extensions/8.6.6": {
+      "sha512": "hUhiTVtJud5PhVmt6bnns164wn5BPLzdzXIu09aZOHf/1NiHYgL+wzpQpvj00Fhcp0OYnFaVMcolMYQjxtVKrg==",
       "type": "package",
-      "path": "polly.extensions/8.4.2",
+      "path": "polly.extensions/8.6.6",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
+        "LICENSE",
         "lib/net462/Polly.Extensions.dll",
         "lib/net462/Polly.Extensions.pdb",
         "lib/net462/Polly.Extensions.xml",
@@ -3697,7 +3699,7 @@
         "lib/netstandard2.0/Polly.Extensions.xml",
         "package-icon.png",
         "package-readme.md",
-        "polly.extensions.8.4.2.nupkg.sha512",
+        "polly.extensions.8.6.6.nupkg.sha512",
         "polly.extensions.nuspec"
       ]
     },
@@ -4615,6 +4617,8 @@
       "Microsoft.Extensions.Http.Polly >= 8.0.0",
       "Microsoft.Extensions.Http.Resilience >= 10.6.0",
       "Npgsql >= 10.0.2",
+      "Polly.Core >= 8.6.6",
+      "Polly.Extensions >= 8.6.6",
       "Pomelo.EntityFrameworkCore.MySql >= 8.0.2",
       "RabbitMQ.Client >= 6.8.1",
       "Serilog.AspNetCore >= 10.0.0",
@@ -4626,19 +4630,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\victo\\.nuget\\packages\\": {}
+    "C:\\Users\\NOTEBOOK\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
+      "projectUniqueName": "D:\\Nobre\\Documents\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
       "projectName": "HelpDesk.Gateway",
-      "projectPath": "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
-      "packagesPath": "C:\\Users\\victo\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\obj\\",
+      "projectPath": "D:\\Nobre\\Documents\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
+      "packagesPath": "C:\\Users\\NOTEBOOK\\.nuget\\packages\\",
+      "outputPath": "D:\\Nobre\\Documents\\HelpDesk\\HelpDesk.Gateway\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\victo\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\NOTEBOOK\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -4661,7 +4665,8 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      }
+      },
+      "SdkAnalysisLevel": "10.0.200"
     },
     "frameworks": {
       "net8.0": {
@@ -4700,6 +4705,14 @@
           "Npgsql": {
             "target": "Package",
             "version": "[10.0.2, )"
+          },
+          "Polly.Core": {
+            "target": "Package",
+            "version": "[8.6.6, )"
+          },
+          "Polly.Extensions": {
+            "target": "Package",
+            "version": "[8.6.6, )"
           },
           "Pomelo.EntityFrameworkCore.MySql": {
             "target": "Package",
@@ -4753,7 +4766,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.420/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.203/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

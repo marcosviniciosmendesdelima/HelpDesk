@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj": {}
+    "D:\\Nobre\\Documents\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj": {}
   },
   "projects": {
-    "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj": {
+    "D:\\Nobre\\Documents\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
+        "projectUniqueName": "D:\\Nobre\\Documents\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
         "projectName": "HelpDesk.Gateway",
-        "projectPath": "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
-        "packagesPath": "C:\\Users\\victo\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\victo\\HelpDesk\\HelpDesk.Gateway\\obj\\",
+        "projectPath": "D:\\Nobre\\Documents\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
+        "packagesPath": "C:\\Users\\NOTEBOOK\\.nuget\\packages\\",
+        "outputPath": "D:\\Nobre\\Documents\\HelpDesk\\HelpDesk.Gateway\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\victo\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\NOTEBOOK\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -37,7 +37,8 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "10.0.200"
       },
       "frameworks": {
         "net8.0": {
@@ -76,6 +77,14 @@
             "Npgsql": {
               "target": "Package",
               "version": "[10.0.2, )"
+            },
+            "Polly.Core": {
+              "target": "Package",
+              "version": "[8.6.6, )"
+            },
+            "Polly.Extensions": {
+              "target": "Package",
+              "version": "[8.6.6, )"
             },
             "Pomelo.EntityFrameworkCore.MySql": {
               "target": "Package",
@@ -129,7 +138,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.420/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.203/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
