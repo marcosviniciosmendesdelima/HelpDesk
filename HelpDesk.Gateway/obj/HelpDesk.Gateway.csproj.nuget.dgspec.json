@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/app/HelpDesk.Gateway.csproj": {}
+    "/Users/viniciusmendes/Desktop/HelpDesk/HelpDesk.Gateway/HelpDesk.Gateway.csproj": {}
   },
   "projects": {
-    "/app/HelpDesk.Gateway.csproj": {
+    "/Users/viniciusmendes/Desktop/HelpDesk/HelpDesk.Gateway/HelpDesk.Gateway.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/app/HelpDesk.Gateway.csproj",
+        "projectUniqueName": "/Users/viniciusmendes/Desktop/HelpDesk/HelpDesk.Gateway/HelpDesk.Gateway.csproj",
         "projectName": "HelpDesk.Gateway",
-        "projectPath": "/app/HelpDesk.Gateway.csproj",
-        "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/app/obj/",
+        "projectPath": "/Users/viniciusmendes/Desktop/HelpDesk/HelpDesk.Gateway/HelpDesk.Gateway.csproj",
+        "packagesPath": "/Users/viniciusmendes/.nuget/packages/",
+        "outputPath": "/Users/viniciusmendes/Desktop/HelpDesk/HelpDesk.Gateway/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/root/.nuget/NuGet/NuGet.Config"
+          "/Users/viniciusmendes/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -47,6 +47,14 @@
               "target": "Package",
               "version": "[2.1.72, )"
             },
+            "Microsoft.Extensions.Diagnostics.HealthChecks": {
+              "target": "Package",
+              "version": "[10.0.8, )"
+            },
+            "Microsoft.Extensions.Http.Resilience": {
+              "target": "Package",
+              "version": "[10.6.0, )"
+            },
             "Npgsql": {
               "target": "Package",
               "version": "[10.0.2, )"
@@ -54,6 +62,14 @@
             "RabbitMQ.Client": {
               "target": "Package",
               "version": "[6.8.1, )"
+            },
+            "Serilog.AspNetCore": {
+              "target": "Package",
+              "version": "[10.0.0, )"
+            },
+            "Serilog.Enrichers.CorrelationId": {
+              "target": "Package",
+              "version": "[3.0.1, )"
             },
             "Yarp.ReverseProxy": {
               "target": "Package",
@@ -79,7 +95,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.421/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.420/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
