@@ -4630,19 +4630,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\NOTEBOOK\\.nuget\\packages\\": {}
+    "/Users/viniciusmendes/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Nobre\\Documents\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
+      "projectUniqueName": "/Users/viniciusmendes/Desktop/HelpDesk/HelpDesk.Gateway/HelpDesk.Gateway.csproj",
       "projectName": "HelpDesk.Gateway",
-      "projectPath": "D:\\Nobre\\Documents\\HelpDesk\\HelpDesk.Gateway\\HelpDesk.Gateway.csproj",
-      "packagesPath": "C:\\Users\\NOTEBOOK\\.nuget\\packages\\",
-      "outputPath": "D:\\Nobre\\Documents\\HelpDesk\\HelpDesk.Gateway\\obj\\",
+      "projectPath": "/Users/viniciusmendes/Desktop/HelpDesk/HelpDesk.Gateway/HelpDesk.Gateway.csproj",
+      "packagesPath": "/Users/viniciusmendes/.nuget/packages/",
+      "outputPath": "/Users/viniciusmendes/Desktop/HelpDesk/HelpDesk.Gateway/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\NOTEBOOK\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "/Users/viniciusmendes/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -4665,8 +4665,7 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      },
-      "SdkAnalysisLevel": "10.0.200"
+      }
     },
     "frameworks": {
       "net8.0": {
@@ -4766,7 +4765,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.203/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.420/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

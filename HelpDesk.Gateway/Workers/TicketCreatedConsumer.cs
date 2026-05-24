@@ -16,6 +16,7 @@ using HelpDesk.Gateway.Hubs;
 using HelpDesk.Gateway.Services;
 
 using Serilog;
+using Polly; // <-- Correção 1: Importação do Polly ativa
 
 namespace HelpDesk.Gateway.Workers
 {
@@ -23,8 +24,8 @@ namespace HelpDesk.Gateway.Workers
     {
         private readonly IConfiguration _config;
         private readonly IServiceProvider _serviceProvider;
-
         private readonly string _connectionString;
+        private readonly ResiliencePipeline _resiliencePipeline; // <-- Correção 2: Variável da política declarada
 
         public TicketCreatedConsumer(
             IConfiguration config,
@@ -35,6 +36,22 @@ namespace HelpDesk.Gateway.Workers
 
             _connectionString = _config.GetConnectionString("DefaultConnection")
                 ?? throw new Exception("Connection string não encontrada.");
+
+            // <-- Correção 3: Configuração da estratégia de Retry com Log Estruturado
+            _resiliencePipeline = new ResiliencePipelineBuilder()
+                .AddRetry(new Polly.Retry.RetryStrategyOptions
+                {
+                    MaxRetryAttempts = 3,
+                    Delay = TimeSpan.FromSeconds(2),
+                    BackoffType = DelayBackoffType.Constant,
+                    OnRetry = outcome =>
+                    {
+                        Log.Warning("Banco PostgreSQL oscilou. Erro: {Erro}. Tentando reconectar automaticamente...", 
+                            outcome.Outcome.Exception?.Message ?? "Conexão recusada");
+                        return default;
+                    }
+                })
+                .Build();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -119,40 +136,42 @@ namespace HelpDesk.Gateway.Workers
                     }
 
                     // ============================================================
-                    // POSTGRES
+                    // POSTGRES PROTEGIDO COM POLLY E RETRY (CONSERTADO!)
                     // ============================================================
-
                     try
                     {
-                        using var db = new NpgsqlConnection(_connectionString);
+                        await _resiliencePipeline.ExecuteAsync(async token =>
+                        {
+                            using var db = new NpgsqlConnection(_connectionString);
 
-                        var sql = @"
-                            INSERT INTO ""TicketsRead""
-                            (
-                                ""Id"",
-                                ""Titulo"",
-                                ""Descricao"",
-                                ""Prioridade"",
-                                ""Status""
-                            )
-                            VALUES
-                            (
-                                @Id,
-                                @Titulo,
-                                @Descricao,
-                                @Prioridade,
-                                @Status
-                            )
-                            ON CONFLICT (""Id"") DO NOTHING;
-                        ";
+                            var sql = @"
+                                INSERT INTO ""TicketsRead""
+                                (
+                                    ""Id"",
+                                    ""Titulo"",
+                                    ""Descricao"",
+                                    ""Prioridade"",
+                                    ""Status""
+                                )
+                                VALUES
+                                (
+                                    @Id,
+                                    @Titulo,
+                                    @Descricao,
+                                    @Prioridade,
+                                    @Status
+                                )
+                                ON CONFLICT (""Id"") DO NOTHING;
+                            ";
 
-                        await db.ExecuteAsync(sql, ticketData);
+                            await db.ExecuteAsync(sql, ticketData);
+                        }, stoppingToken);
 
-                        Log.Information("Ticket salvo no PostgreSQL: {Id}", ticketData.Id);
+                        Log.Information("Ticket salvo no PostgreSQL com sucesso: {Id}", ticketData.Id);
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, "Erro ao salvar no PostgreSQL");
+                        Log.Error(ex, "Erro definitivo ao salvar no PostgreSQL após 3 tentativas.");
                     }
 
                     // ============================================================
@@ -191,7 +210,7 @@ namespace HelpDesk.Gateway.Workers
                                 status = ticketData.Status,
                                 prioridade = ticketData.Prioridade,
                                 notificadoEm = DateTime.UtcNow,
-                                mensagem = "Ticket atualizado em tempo real"
+                                mensagem = "Ticket updated in real-time"
                             });
 
                         Log.Information("SignalR enviado para grupo {Grupo}", grupo);
