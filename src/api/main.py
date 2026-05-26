@@ -1,6 +1,9 @@
 import sys
 import os
+import logging
 from fastapi import FastAPI, Depends
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 
 # --- AJUSTE DE CAMINHO PARA O DOCKER ---
@@ -30,7 +33,13 @@ app = FastAPI(title="Help Desk API - Etapa 8.3", version="v1")
 
 @app.get("/api/v1/health")
 async def health_check():
-    return {"status": "ok", "version": "v1", "cqrs": "active"}
+    logger.info("Health check executado com sucesso")
+
+    return {
+        "status": "ok",
+        "version": "v1",
+        "cqrs": "active"
+    }
 
 # --- ROTA DE LEITURA (Etapa 8.3 - Lado Query) ---
 # Busca dados na tabela TicketsRead sincronizada pelo .NET
