@@ -40,6 +40,22 @@ async def health_check():
         "version": "v1",
         "cqrs": "active"
     }
+@app.get("/api/v1/health/live")
+async def health_live():
+    logger.info("Health live executado")
+
+    return {
+        "status": "alive"
+    }
+
+
+@app.get("/api/v1/health/ready")
+async def health_ready():
+    logger.info("Health ready executado")
+
+    return {
+        "status": "ready"
+    }
 
 # --- ROTA DE LEITURA (Etapa 8.3 - Lado Query) ---
 # Busca dados na tabela TicketsRead sincronizada pelo .NET
