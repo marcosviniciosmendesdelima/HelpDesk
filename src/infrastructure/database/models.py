@@ -1,12 +1,19 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime
-from datetime import datetime
+from sqlalchemy import Column, String, Text, DateTime, UUID
+from sqlalchemy.sql import func
 from .config import Base
+import uuid
 
-class ChamadoModel(Base):
-    __tablename__ = "chamados"
+class TicketsReadModel(Base):
+    # Definimos o nome da tabela exatamente como o C# espera: "TicketsRead"
+    # O SQLAlchemy coloca aspas automaticamente se o nome tiver maiúsculas.
+    __tablename__ = "TicketsRead"
 
-    id = Column(Integer, primary_key=True, index=True)
-    titulo = Column(String(100), nullable=False)
-    descricao = Column(Text, nullable=False)
-    status = Column(String(20), default="aberto")
-    data_criacao = Column(DateTime, default=datetime.utcnow)
+    # O C# espera um UUID como Primary Key
+    id = Column("Id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # Colunas em minúsculo conforme o seu banco PostgreSQL
+    titulo = Column(String(200), nullable=True)
+    descricao = Column(Text, nullable=True)
+    prioridade = Column(String(50), nullable=True)
+    status = Column(String(50), nullable=True)
+    datacriacao = Column(DateTime, default=func.now())

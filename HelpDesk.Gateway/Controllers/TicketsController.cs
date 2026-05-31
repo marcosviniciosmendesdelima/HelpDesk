@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using Dapper;
 using HelpDesk.Gateway.Services;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -14,14 +15,14 @@ namespace HelpDesk.Gateway.Controllers
     public class TicketsController : ControllerBase
     {
         private readonly ITicketCacheService _cacheService;
-        
-        // String de conexão apontando para o container do banco na rede do Docker
-        private readonly string _connectionString = "Host=helpdesk-db;Port=5432;Database=postgres;Username=postgres;Password=SenhaForte123;";
+        private readonly string _connectionString;
         private const string CacheKey = "tickets:all";
 
-        public TicketsController(ITicketCacheService cacheService)
+        public TicketsController(ITicketCacheService cacheService, IConfiguration configuration)
         {
             _cacheService = cacheService;
+            _connectionString = configuration.GetConnectionString("DefaultConnection")
+                ?? "Host=db-helpdesk;Port=5432;Database=postgres;Username=postgres;Password=SenhaForte123;";
         }
 
         [HttpGet]

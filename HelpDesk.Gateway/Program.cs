@@ -25,43 +25,20 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    // =========================================================================
-    // ATIVA O SERILOG
-    // =========================================================================
-
     builder.Host.UseSerilog();
 
-    // =========================================================================
-    // CONFIGURAÇÃO DINÂMICA REDIS
-    // =========================================================================
-
     string? redisHostConfig = builder.Configuration["Redis:Host"];
-
-    string redisHost = !string.IsNullOrEmpty(redisHostConfig)
-        ? redisHostConfig
-        : "localhost";
-
+    string redisHost = !string.IsNullOrEmpty(redisHostConfig) ? redisHostConfig : "localhost";
     string redisConnection = $"{redisHost}:6379";
 
     Log.Information("Redis configurado para {RedisHost}", redisConnection);
 
-    // =========================================================================
-    // CONFIGURAÇÃO DO YARP (API GATEWAY)
-    // =========================================================================
-
     builder.Services.AddReverseProxy()
         .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
-    // =========================================================================
-    // REGISTRA O WORKER DO RABBITMQ
-    // =========================================================================
-
     builder.Services.AddHostedService<TicketCreatedConsumer>();
 
-    // =========================================================================
-    // CACHE DISTRIBUÍDO REDIS
-    // =========================================================================
-
+    // Mantido para o Cache, mas removido do SignalR abaixo
     builder.Services.AddStackExchangeRedisCache(options =>
     {
         options.Configuration = redisConnection;
@@ -70,15 +47,7 @@ try
 
     builder.Services.AddScoped<ITicketCacheService, TicketCacheService>();
 
-    // =========================================================================
-    // CONTROLLERS
-    // =========================================================================
-
     builder.Services.AddControllers();
-
-    // =========================================================================
-    // CORS
-    // =========================================================================
 
     builder.Services.AddCors(options =>
     {
@@ -86,70 +55,38 @@ try
         {
             policy.AllowAnyHeader()
                   .AllowAnyMethod()
-                  .AllowCredentials()
-                  .SetIsOriginAllowed(_ => true);
+                  .SetIsOriginAllowed(_ => true)
+                  .AllowCredentials();
         });
     });
 
     // =========================================================================
-    // SIGNALR + REDIS BACKPLANE
+    // SIGNALR SEM REDIS BACKPLANE (Modo Memória)
     // =========================================================================
-
-    builder.Services.AddSignalR()
-        .AddStackExchangeRedis(redisConnection, options =>
-        {
-            options.Configuration.ChannelPrefix =
-                RedisChannel.Literal("HelpDesk_SignalR");
-        });
-
-    // =========================================================================
+    builder.Services.AddSignalR(); 
 
     var app = builder.Build();
 
-    // =========================================================================
-    // MIDDLEWARE DO CORRELATION ID
-    // =========================================================================
+    app.UseCors();
+    app.UseRouting();
+    app.UseWebSockets();
 
     app.Use(async (context, next) =>
     {
         var correlationId = context.Request.Headers["X-Correlation-ID"]
             .FirstOrDefault() ?? Guid.NewGuid().ToString();
-
         context.Response.Headers["X-Correlation-ID"] = correlationId;
-
         using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
         {
             await next();
         }
     });
 
-    // =========================================================================
-
-    app.UseCors();
-
-    app.UseWebSockets();
-
-    app.UseRouting();
-
-    // =========================================================================
-    // MAPEAMENTO DOS ENDPOINTS
-    // =========================================================================
-
     app.MapControllers();
-
     app.MapHub<TicketHub>("/hubs/tickets");
-
     app.MapReverseProxy();
 
-    // =========================================================================
-    // LOG DE INICIALIZAÇÃO
-    // =========================================================================
-
-    Log.Information("HelpDesk.Gateway inicializado com sucesso.");
-
-    // =========================================================================
-    // EXECUÇÃO DA APLICAÇÃO
-    // =========================================================================
+    Log.Information("HelpDesk.Gateway inicializado com sucesso (SignalR em Memória).");
 
     app.Run();
 }

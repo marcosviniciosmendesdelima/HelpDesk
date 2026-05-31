@@ -1,30 +1,34 @@
 import pika
 import json
+import uuid
 
-# No Docker, o host é o nome do serviço: 'rabbitmq'
-# Se rodar fora do Docker (local), use '127.0.0.1'
+# Configuração da conexão com o RabbitMQ
 try:
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host='127.0.0.1', port=5672)
-    )
+    # Ajuste o host conforme necessário (se rodar fora do Docker, localhost funciona)
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost', port=5672))
     channel = connection.channel()
 
-    # Criando a Exchange (Automáticamente criada pelo RabbitMQ quando a mensagem é publicada, mas declarada aqui para garantir)
-    channel.exchange_declare(exchange='chamado.criado', exchange_type='fanout')
+    # O nome da fila DEVE ser igual ao que está no seu ChamadoConsumer.cs (fila_tickets)
+    queue_name = 'fila_tickets'
+    channel.queue_declare(queue=queue_name, durable=True)
 
     mensagem = {
-        "id": 1,
-        "titulo": "Teste do Marcos",
-        "email": "marcos@ti.com"
+        "Id": str(uuid.uuid4()),
+        "Titulo": "Teste Definitivo",
+        "Descricao": "Conexão direta na fila",
+        "Prioridade": "Alta",
+        "Status": "Aberto"
     }
 
+    # Publicação na fila correta
     channel.basic_publish(
-        exchange='chamado.criado',
-        routing_key='',
-        body=json.dumps(mensagem)
+        exchange='',
+        routing_key=queue_name,
+        body=json.dumps(mensagem),
+        properties=pika.BasicProperties(delivery_mode=2) # Mensagem persistente
     )
 
-    print(" [v] SUCESSO: Mensagem enviada para a exchange 'chamado.criado'!")
+    print(f" [v] SUCESSO: Mensagem enviada para '{queue_name}'!")
     connection.close()
 except Exception as e:
-    print(f" [x] ERRO: Verifique se o Docker está rodando. Detalhe: {e}")
+    print(f" [x] ERRO: {e}")

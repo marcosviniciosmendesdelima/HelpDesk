@@ -1,242 +1,67 @@
 using System.Text;
 using System.Text.Json;
-
 using Dapper;
 using Npgsql;
-
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
-
+using Microsoft.AspNetCore.SignalR;
 using HelpDesk.Gateway.Hubs;
-using HelpDesk.Gateway.Services;
-
 using Serilog;
-using Polly; // <-- Correção 1: Importação do Polly ativa
 
 namespace HelpDesk.Gateway.Workers
 {
     public class TicketCreatedConsumer : BackgroundService
     {
         private readonly IConfiguration _config;
-        private readonly IServiceProvider _serviceProvider;
         private readonly string _connectionString;
-        private readonly ResiliencePipeline _resiliencePipeline; // <-- Correção 2: Variável da política declarada
+        private readonly IHubContext<TicketHub> _hubContext;
 
-        public TicketCreatedConsumer(
-            IConfiguration config,
-            IServiceProvider serviceProvider)
+        public TicketCreatedConsumer(IConfiguration config, IHubContext<TicketHub> hubContext)
         {
             _config = config;
-            _serviceProvider = serviceProvider;
-
-            _connectionString = _config.GetConnectionString("DefaultConnection")
+            _hubContext = hubContext;
+            _connectionString = _config.GetConnectionString("DefaultConnection") 
                 ?? throw new Exception("Connection string não encontrada.");
-
-            // <-- Correção 3: Configuração da estratégia de Retry com Log Estruturado
-            _resiliencePipeline = new ResiliencePipelineBuilder()
-                .AddRetry(new Polly.Retry.RetryStrategyOptions
-                {
-                    MaxRetryAttempts = 3,
-                    Delay = TimeSpan.FromSeconds(2),
-                    BackoffType = DelayBackoffType.Constant,
-                    OnRetry = outcome =>
-                    {
-                        Log.Warning("Banco PostgreSQL oscilou. Erro: {Erro}. Tentando reconectar automaticamente...", 
-                            outcome.Outcome.Exception?.Message ?? "Conexão recusada");
-                        return default;
-                    }
-                })
-                .Build();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            string? configHost = _config["RabbitMQ:Host"];
-
-            string rabbitHost = !string.IsNullOrEmpty(configHost)
-                ? configHost
-                : "localhost";
-
-            if (rabbitHost == "helpdesk-rabbitmq" &&
-                !Environment.GetEnvironmentVariables()
-                    .Contains("DOTNET_RUNNING_IN_CONTAINER"))
-            {
-                rabbitHost = "localhost";
-            }
-
-            var factory = new ConnectionFactory()
-            {
-                HostName = rabbitHost,
-                DispatchConsumersAsync = true
-            };
+            var rabbitHost = _config["RabbitMQ:Host"] ?? "rabbitmq";
+            var factory = new ConnectionFactory() { HostName = rabbitHost, DispatchConsumersAsync = true };
 
             IConnection? connection = null;
-            int tentativas = 0;
-
-            Log.Information("Tentando conectar ao RabbitMQ em {Host}", rabbitHost);
-
-            while (connection == null &&
-                   !stoppingToken.IsCancellationRequested &&
-                   tentativas < 10)
+            while (connection == null && !stoppingToken.IsCancellationRequested)
             {
-                try
-                {
-                    tentativas++;
-
-                    connection = factory.CreateConnection();
-
-                    Log.Information("RabbitMQ conectado com sucesso");
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "RabbitMQ indisponível. Tentando novamente em 5s...");
-                    await Task.Delay(5000, stoppingToken);
-                }
+                try { connection = factory.CreateConnection(); Log.Information("RabbitMQ conectado!"); }
+                catch { await Task.Delay(5000, stoppingToken); }
             }
 
-            if (connection == null)
-            {
-                Log.Fatal("Falha ao conectar no RabbitMQ após múltiplas tentativas.");
-                return;
-            }
-
-            using var currentConnection = connection;
-            using var channel = currentConnection.CreateModel();
-
-            const string queueName = "fila_tickets";
-
-            channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: false);
+            using var channel = connection!.CreateModel();
+            channel.QueueDeclare("fila_tickets", durable: true, exclusive: false, autoDelete: false);
 
             var consumer = new AsyncEventingBasicConsumer(channel);
-
             consumer.Received += async (model, ea) =>
             {
-                try
+                var message = Encoding.UTF8.GetString(ea.Body.ToArray());
+                var ticketData = JsonSerializer.Deserialize<TicketReadModel>(message, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (ticketData != null)
                 {
-                    var message = Encoding.UTF8.GetString(ea.Body.ToArray());
+                    using var db = new NpgsqlConnection(_connectionString);
+                    await db.ExecuteAsync(@"INSERT INTO ""TicketsRead"" (""Id"", ""titulo"", ""descricao"", ""prioridade"", ""status"") VALUES (@Id, @Titulo, @Descricao, @Prioridade, @Status)", 
+                        new { Id = Guid.Parse(ticketData.Id), Titulo = ticketData.Titulo, Descricao = ticketData.Descricao, Prioridade = ticketData.Prioridade, Status = ticketData.Status });
 
-                    Log.Information("Mensagem recebida: {Message}", message);
-
-                    var ticketData = JsonSerializer.Deserialize<TicketReadModel>(
-                        message,
-                        new JsonSerializerOptions
-                        {
-                            PropertyNameCaseInsensitive = true
-                        });
-
-                    if (ticketData == null)
-                    {
-                        Log.Warning("Mensagem inválida recebida");
-                        return;
-                    }
-
-                    // ============================================================
-                    // POSTGRES PROTEGIDO COM POLLY E RETRY (CONSERTADO!)
-                    // ============================================================
-                    try
-                    {
-                        await _resiliencePipeline.ExecuteAsync(async token =>
-                        {
-                            using var db = new NpgsqlConnection(_connectionString);
-
-                            var sql = @"
-                                INSERT INTO ""TicketsRead""
-                                (
-                                    ""Id"",
-                                    ""Titulo"",
-                                    ""Descricao"",
-                                    ""Prioridade"",
-                                    ""Status""
-                                )
-                                VALUES
-                                (
-                                    @Id,
-                                    @Titulo,
-                                    @Descricao,
-                                    @Prioridade,
-                                    @Status
-                                )
-                                ON CONFLICT (""Id"") DO NOTHING;
-                            ";
-
-                            await db.ExecuteAsync(sql, ticketData);
-                        }, stoppingToken);
-
-                        Log.Information("Ticket salvo no PostgreSQL com sucesso: {Id}", ticketData.Id);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error(ex, "Erro definitivo ao salvar no PostgreSQL após 3 tentativas.");
-                    }
-
-                    // ============================================================
-                    // CACHE REDIS (CORRIGIDO - SCOPED SAFE)
-                    // ============================================================
-
-                    using (var scope = _serviceProvider.CreateScope())
-                    {
-                        var cacheService =
-                            scope.ServiceProvider.GetRequiredService<ITicketCacheService>();
-
-                        await cacheService.RemoveTicketCacheAsync("tickets:all");
-                    }
-
-                    Log.Information("Cache invalidado");
-
-                    // ============================================================
-                    // SIGNALR
-                    // ============================================================
-
-                    using (var scope = _serviceProvider.CreateScope())
-                    {
-                        var hubContext =
-                            scope.ServiceProvider.GetRequiredService<IHubContext<TicketHub>>();
-
-                        Guid ticketGuid = Guid.Parse(ticketData.Id);
-
-                        string grupo = TicketHub.ObterNomeDoGrupo(ticketGuid);
-
-                        await hubContext.Clients
-                            .Group(grupo)
-                            .SendAsync("OnTicketStatusChanged", new
-                            {
-                                ticketId = ticketData.Id,
-                                titulo = ticketData.Titulo,
-                                status = ticketData.Status,
-                                prioridade = ticketData.Prioridade,
-                                notificadoEm = DateTime.UtcNow,
-                                mensagem = "Ticket updated in real-time"
-                            });
-
-                        Log.Information("SignalR enviado para grupo {Grupo}", grupo);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex, "Erro crítico no consumer");
+                    // ENVIO SERIALIZADO (String JSON)
+                    var jsonPayload = JsonSerializer.Serialize(ticketData, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+                    await _hubContext.Clients.All.SendAsync("TicketCreated", jsonPayload);
+                    Log.Information("Ticket {Id} processado e enviado.", ticketData.Id);
                 }
             };
-
-            channel.BasicConsume(queueName, autoAck: true, consumer);
-
-            Log.Information("Consumer iniciado na fila {Queue}", queueName);
-
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                await Task.Delay(1000, stoppingToken);
-            }
+            channel.BasicConsume("fila_tickets", true, consumer);
+            await Task.Delay(Timeout.Infinite, stoppingToken);
         }
     }
-
-    public record TicketReadModel(
-        string Id,
-        string Titulo,
-        string Descricao,
-        string Prioridade,
-        string Status);
+    public record TicketReadModel(string Id, string Titulo, string Descricao, string Prioridade, string Status);
 }

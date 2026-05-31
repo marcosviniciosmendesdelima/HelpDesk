@@ -1,12 +1,19 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
+using System.Text.Json;
+using Npgsql;
+using Dapper;
 
 public class ChamadoConsumer
 {
-    // Ajustado para o nome do serviço no Docker
     private readonly string _hostname = "rabbitmq"; 
-    private readonly string _exchangeName = "chamado.criado";
+    private readonly string _connectionString;
+
+    public ChamadoConsumer(string connectionString)
+    {
+        _connectionString = connectionString;
+    }
 
     public void EscutarEventos()
     {
@@ -17,39 +24,63 @@ public class ChamadoConsumer
             Password = "guest"
         };
 
-        // Versão síncrona para compatibilidade com o Build atual
         var connection = factory.CreateConnection();
         var channel = connection.CreateModel();
 
-        channel.ExchangeDeclare(
-            exchange: _exchangeName,
-            type: ExchangeType.Fanout
-        );
+        // Fila alinhada com o seu script Python
+        const string queueName = "fila_tickets";
+        channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
 
-        // Declara uma fila temporária
-        var queueName = channel.QueueDeclare().QueueName;
-
-        channel.QueueBind(
-            queue: queueName,
-            exchange: _exchangeName,
-            routingKey: ""
-        );
-
-        Console.WriteLine("Gateway .NET: Aguardando mensagens do Python...");
+        Console.WriteLine($"Gateway .NET: Aguardando mensagens na fila '{queueName}' para gravar no banco...");
 
         var consumer = new EventingBasicConsumer(channel);
 
         consumer.Received += (sender, ea) =>
         {
-            var body = ea.Body.ToArray();
-            var message = Encoding.UTF8.GetString(body);
-            Console.WriteLine($" [🚨 GATEWAY .NET] Chamado recebido do Python: {message}");
+            var message = Encoding.UTF8.GetString(ea.Body.ToArray());
+            Console.WriteLine($" [🚨] Chamado recebido: {message}");
+
+            try
+            {
+                var ticketData = JsonSerializer.Deserialize<TicketReadModel>(message, 
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (ticketData != null)
+                {
+                    using var db = new NpgsqlConnection(_connectionString);
+                    
+                    // SQL corrigido usando prefixos nos parâmetros para evitar conflito com nomes de colunas
+                    var sql = @"INSERT INTO ""TicketsRead"" (""Id"", ""titulo"", ""descricao"", ""prioridade"", ""status"", ""datacriacao"") 
+                                VALUES (@Id, @pTitulo, @pDescricao, @pPrioridade, @pStatus, @pDataCriacao) 
+                                ON CONFLICT (""Id"") DO NOTHING;";
+
+                    // Execução com os parâmetros mapeados corretamente
+                    db.Execute(sql, new {
+                        Id = Guid.Parse(ticketData.Id),
+                        pTitulo = ticketData.Titulo,
+                        pDescricao = ticketData.Descricao,
+                        pPrioridade = ticketData.Prioridade,
+                        pStatus = ticketData.Status,
+                        pDataCriacao = DateTime.UtcNow
+                    });
+                    
+                    Console.WriteLine($" [✅] Ticket {ticketData.Id} gravado com sucesso no PostgreSQL!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($" [❌] Erro ao processar ticket: {ex.Message}");
+            }
         };
 
-        channel.BasicConsume(
-            queue: queueName,
-            autoAck: true,
-            consumer: consumer
-        );
+        channel.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);
     }
 }
+
+public record TicketReadModel(
+    string Id, 
+    string Titulo, 
+    string Descricao, 
+    string Prioridade, 
+    string Status
+);

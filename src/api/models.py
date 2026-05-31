@@ -1,13 +1,20 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime
-from datetime import datetime
+from sqlalchemy import Column, String, Text, DateTime, UUID
+from sqlalchemy.sql import func
 from .database import Base
+import uuid
 
 class Chamado(Base):
-    __tablename__ = "chamados"
+    # Nome da tabela ajustado para o padrão que o .NET Gateway consome
+    __tablename__ = "TicketsRead"
 
-    id = Column(Integer, primary_key=True, index=True)
-    titulo = Column(String(100), nullable=False)
+    # id mapeado como 'Id' (maiúsculo) e tipo UUID como no Postgres
+    id = Column("Id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # Colunas em minúsculo, conforme o schema do banco
+    titulo = Column(String(200), nullable=False)
     descricao = Column(Text, nullable=False)
-    prioridade = Column(String(20), default="Media") # Baixa, Media, Alta
-    status = Column(String(20), default="Aberto")    # Aberto, Em Atendimento, Concluido
-    data_criacao = Column(DateTime, default=datetime.utcnow)
+    prioridade = Column(String(50), default="Media")
+    status = Column(String(50), default="Aberto")
+    
+    # datacriacao segue o nome da coluna que o .NET espera
+    datacriacao = Column(DateTime, default=func.now())
