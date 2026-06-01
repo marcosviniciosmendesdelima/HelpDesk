@@ -24,13 +24,13 @@ jobs:
 
   sonar-analysis:
     needs: test
+    if: secrets.SONAR_TOKEN != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: SonarQube Scan
-        if: secrets.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
