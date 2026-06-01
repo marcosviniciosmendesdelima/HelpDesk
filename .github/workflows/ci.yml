@@ -23,16 +23,16 @@ jobs:
       - name: Build
         run: dotnet build --no-restore
       
-      # Testa e força a saída na raiz do projeto
+      # Forçamos a geração do arquivo na raiz com um nome fixo
       - name: Run Tests
-        run: dotnet test --no-restore /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=${{ github.workspace }}/coverage.opencover.xml
+        run: dotnet test --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage.opencover.xml
       
-      # Faz upload usando o caminho absoluto
+      # Fazemos o upload do arquivo exato da raiz
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: ${{ github.workspace }}/coverage.opencover.xml
+          path: ./coverage.opencover.xml
 
   sonar-analysis:
     needs: test
@@ -42,12 +42,11 @@ jobs:
         with:
           fetch-depth: 0
       
-      # Faz download usando o caminho absoluto
+      # Baixamos o artefato para a raiz
       - name: Download coverage report
         uses: actions/download-artifact@v4
         with:
           name: coverage-report
-          path: ${{ github.workspace }}
           
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5.0.0
@@ -58,4 +57,4 @@ jobs:
             -Dsonar.projectKey=HelpDesk_Projeto
             -Dsonar.organization=marcosviniciosmendesdelima
             -Dsonar.sources=.
-            -Dsonar.cs.opencover.reportsPaths=${{ github.workspace }}/coverage.opencover.xml
+            -Dsonar.cs.opencover.reportsPaths=coverage.opencover.xml
