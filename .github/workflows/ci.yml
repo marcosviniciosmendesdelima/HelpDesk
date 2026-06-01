@@ -20,7 +20,7 @@ jobs:
       - name: Build
         run: dotnet build --no-restore
       - name: Run Tests
-        run: dotnet test --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+        run: dotnet test --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=coverage.opencover.xml
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
@@ -29,5 +29,4 @@ jobs:
           args: >
             -Dsonar.projectKey=HelpDesk_Projeto
             -Dsonar.organization=marcosviniciosmendesdelima
-            -Dsonar.sources=.
             -Dsonar.cs.opencover.reportsPaths=**/coverage.opencover.xml
