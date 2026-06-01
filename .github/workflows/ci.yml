@@ -22,14 +22,17 @@ jobs:
         run: dotnet restore
       - name: Build
         run: dotnet build --no-restore
-      - name: Run Tests
-        run: dotnet test --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage/
       
+      # CORREÇÃO: Forçar o nome do arquivo exatamente como o Sonar espera
+      - name: Run Tests
+        run: dotnet test --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=coverage.opencover.xml
+      
+      # CORREÇÃO: Pegar o arquivo diretamente da raiz
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: ./coverage/
+          path: coverage.opencover.xml
 
   sonar-analysis:
     needs: test
@@ -37,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Necessário para o SonarCloud analisar o histórico corretamente
+          fetch-depth: 0 
       
       - name: Download coverage report
         uses: actions/download-artifact@v4
