@@ -22,18 +22,32 @@ jobs:
         run: dotnet restore
       - name: Build
         run: dotnet build --no-restore
+      
       - name: Run Tests
-        continue-on-error: true
-        run: dotnet test --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=coverage.opencover.xml
+        run: dotnet test --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage.opencover.xml
+
+      # Passo crucial: salvar o relatório para o próximo job
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ./coverage.opencover.xml
 
   sonar-analysis:
     needs: test
-    if: secrets.SONAR_TOKEN != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      
+      # Passo crucial: recuperar o relatório no job do Sonar
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: .
+          
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
@@ -42,4 +56,5 @@ jobs:
           args: >
             -Dsonar.projectKey=HelpDesk_Projeto
             -Dsonar.organization=marcosviniciosmendesdelima
-            -Dsonar.cs.opencover.reportsPaths=**/coverage.opencover.xml
+            -Dsonar.sources=.
+            -Dsonar.cs.opencover.reportsPaths=coverage.opencover.xml
