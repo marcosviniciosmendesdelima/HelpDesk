@@ -1,11 +1,10 @@
-# Ignorar pastas do .NET
-[Bb]in/
-[Oo]bj/
-
-# Ignorar pastas do Python
+# Pastas e arquivos de ambiente/ferramentas
+.venv/
+venv/
+.env
 __pycache__/
 *.pyc
-venv/
-
-# Ignorar dados do Docker
-helpdesk-data/
+.vscode/
+.idea/
+bin/
+obj/
