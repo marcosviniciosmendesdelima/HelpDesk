@@ -26,14 +26,18 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - name: SonarQube Scan
+        if: ${{ secrets.SONAR_TOKEN != '' }}
         uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
         with:
+          projectBaseDir: .
           args: >
-            -Dsonar.projectKey=HelpDesk_Projeto
             -Dsonar.organization=marcosviniciosmendesdelima
-            -Dsonar.sources=.
+            -Dsonar.projectKey=HelpDesk_Projeto
             -Dsonar.cs.opencover.reportsPaths=**/coverage.opencover.xml
