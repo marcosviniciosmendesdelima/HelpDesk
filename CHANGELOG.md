@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.1](https://github.com/marcosviniciosmendesdelima/HelpDesk/compare/v1.1.0...v1.1.1) (2026-06-02)
+
+
+### Bug Fixes
+
+* **infrastructure:** add httpx2 and should-dsl to requirements and stabilize CI python setup ([31722f9](https://github.com/marcosviniciosmendesdelima/HelpDesk/commit/31722f911ff8f7491bc5f121bed2ef4d2c0d8849))
+* **infrastructure:** ci coverage artifact upload and api import structure ([64fa76d](https://github.com/marcosviniciosmendesdelima/HelpDesk/commit/64fa76d9d4ad6936adbd01b0b262edaa5d04151b))
+* **infrastructure:** expose chamados router and ignore coverage artifacts ([b09d3c5](https://github.com/marcosviniciosmendesdelima/HelpDesk/commit/b09d3c5cb6e33f78e008c165770cde740a0fc9aa))
+* **infrastructure:** remove artifact transfer and run Sonar in same job ([aa31dd4](https://github.com/marcosviniciosmendesdelima/HelpDesk/commit/aa31dd412a2cdca3f355de13d8a995f4d41a6312))
+* **tests:** atualizar pipeline para java 17 e python ([95ae7a6](https://github.com/marcosviniciosmendesdelima/HelpDesk/commit/95ae7a6630cff80a104efe7d2bfab0066567675e))
+* **tests:** configurar pythonpath e ambiente java para pipeline ([af388e6](https://github.com/marcosviniciosmendesdelima/HelpDesk/commit/af388e6b0b708e8e31ab3ec5e9203d480c31ac77))
+* **tests:** habilitar disparo automático na branch de desenvolvimento ([00503a4](https://github.com/marcosviniciosmendesdelima/HelpDesk/commit/00503a40b2070ef71bffc8f05f9d7b84b9d1f8ac))
+* **tests:** migrar pipeline e sonar para projeto python ([03d8114](https://github.com/marcosviniciosmendesdelima/HelpDesk/commit/03d811439d26fc32659601bb2554ae7d177b5843))
+* **tests:** migrar pipeline para python e pytest ([3aabe28](https://github.com/marcosviniciosmendesdelima/HelpDesk/commit/3aabe28dd33cec5a208677dd5fe23ad5f0ab4474))
+
 ## [1.1.0](https://github.com/marcosviniciosmendesdelima/HelpDesk/compare/v1.0.0...v1.1.0) (2026-06-01)
 
 
