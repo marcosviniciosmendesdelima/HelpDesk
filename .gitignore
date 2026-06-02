@@ -9,3 +9,5 @@ __pycache__/
 bin/
 obj/
 coverage.opencover.xml
+.coverage
+coverage.xml
