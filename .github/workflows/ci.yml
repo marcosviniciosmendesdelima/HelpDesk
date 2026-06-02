@@ -23,16 +23,16 @@ jobs:
       - name: Build
         run: dotnet build helpdesk-tickets.sln --no-restore
 
-      # Run the test project and generate OpenCover output in the repository root
+      # Run the test project and generate OpenCover output in the TestResults folder
       - name: Run Tests
-        run: dotnet test tests/HelpDesk.Gateway.Tests/HelpDesk.Gateway.Tests.csproj --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage.opencover.xml
+        run: dotnet test tests/HelpDesk.Gateway.Tests/HelpDesk.Gateway.Tests.csproj --no-restore --verbosity normal --collect:"XPlat Code Coverage;Format=opencover" --results-directory ./tests/HelpDesk.Gateway.Tests/TestResults
 
       # Upload the generated coverage report
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: ./coverage.opencover.xml
+          path: tests/HelpDesk.Gateway.Tests/TestResults/**/*.opencover.xml
 
   sonar-analysis:
     needs: test
@@ -58,4 +58,4 @@ jobs:
             -Dsonar.projectKey=HelpDesk_Projeto
             -Dsonar.organization=marcosviniciosmendesdelima
             -Dsonar.sources=.
-            -Dsonar.cs.opencover.reportsPaths=coverage.opencover.xml
+            -Dsonar.cs.opencover.reportsPaths=tests/HelpDesk.Gateway.Tests/TestResults/**/coverage.opencover.xml

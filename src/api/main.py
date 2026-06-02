@@ -16,7 +16,7 @@ from src.infrastructure.database import models
 # Importações dos Casos de Uso (CQRS)
 from src.application.use_cases.commands.chamado_comando import CriarChamadoCommand, handle_criar_chamado
 from src.application.use_cases.queries.chamado_query import handle_listar_todos_chamados 
-from src.api.controllers.chamados_controllers import router as chamados_router
+from src.api.controllers import chamados_router
 
 # Importação da Mensageria
 from src.infrastructure.messaging.publisher import publicar_evento 
