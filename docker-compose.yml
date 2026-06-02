@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: helpdesk-rabbitmq
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - helpdesk-internal-net
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  db-helpdesk:
+    image: postgres:15-alpine
+    container_name: helpdesk-db-helpdesk-1
+    hostname: db-helpdesk
+    environment:
+      POSTGRES_PASSWORD: SenhaForte123
+    ports:
+      - "5432:5432"
+    volumes:
+      - helpdesk-data:/var/lib/postgresql/data
+    networks:
+      - helpdesk-internal-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  helpdesk-cache:
+    image: redis:7-alpine
+    container_name: helpdesk-cache
+    hostname: helpdesk-cache
+    networks:
+      - helpdesk-internal-net
+
+  api-helpdesk:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: helpdesk-api-helpdesk-1
+    ports:
+      - "8000:80"
+    environment:
+      DATABASE_URL: postgresql://postgres:SenhaForte123@db-helpdesk:5432/postgres
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      db-helpdesk:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - helpdesk-internal-net
+
+  gateway:
+    build:
+      context: .
+      dockerfile: HelpDesk.Gateway/Dockerfile
+    container_name: helpdesk-gateway
+    ports:
+      - "5281:8080"
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=db-helpdesk;Port=5432;Database=postgres;Username=postgres;Password=SenhaForte123
+      - Redis__Host=helpdesk-cache
+      - RabbitMQ__Host=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db-helpdesk:
+        condition: service_healthy
+      helpdesk-cache:
+        condition: service_started
+    networks:
+      - helpdesk-internal-net
+
+networks:
+  helpdesk-internal-net:
+    driver: bridge
+
+volumes:
+  helpdesk-data:
+  rabbitmq-data:

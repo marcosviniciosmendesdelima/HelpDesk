@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel HelpDesk</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <style>
+        body { background: #0f172a; color: white; font-family: sans-serif; padding: 20px; }
+        #logs { background: #000; padding: 15px; border-radius: 8px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h2>Monitor HelpDesk - <span id="status">DESCONECTADO</span></h2>
+    <div id="logs"></div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const logsEl = document.getElementById('logs');
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("http://localhost:5281/hubs/tickets")
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        function addLog(message, color = 'white') {
+            const logDiv = document.createElement('div');
+            logDiv.style.color = color;
+            logDiv.innerText = message;
+            logsEl.prepend(logDiv);
+        }
+
+        connection.on("TicketCreated", (payload) => {
+            const ticket = typeof payload === 'string' ? JSON.parse(payload) : payload;
+            addLog(`> Novo Ticket: ${ticket.titulo} (${ticket.prioridade})`, '#7cfc00');
+            console.log("Ticket Recebido:", ticket);
+        });
+
+        connection.onreconnecting(error => {
+            statusEl.innerText = 'RECONECTANDO';
+            addLog(`Reconectando... erro: ${error}`, 'orange');
+            console.warn("SignalR reconectando:", error);
+        });
+
+        connection.onreconnected(connectionId => {
+            statusEl.innerText = 'CONECTADO';
+            addLog(`Reconectado com id ${connectionId}`, '#00ffff');
+            console.log("SignalR reconectado:", connectionId);
+        });
+
+        connection.onclose(error => {
+            statusEl.innerText = 'DESCONECTADO';
+            addLog(`Conexão fechada${error ? ' erro: ' + error : ''}`, 'orange');
+            console.warn("SignalR fechado:", error);
+        });
+
+        connection.start()
+            .then(() => {
+                statusEl.innerText = 'CONECTADO';
+                addLog('Conexão estabelecida com http://localhost:5281/hubs/tickets', '#7cfc00');
+            })
+            .catch(error => {
+                statusEl.innerText = 'ERRO';
+                addLog(`Erro de conexão: ${error}`, 'red');
+                console.error("SignalR connection error:", error);
+            });
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+pika==1.3.2
+python-dotenv
+httpx2
+should-dsl

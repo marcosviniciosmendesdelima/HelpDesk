@@ -1,0 +1,30 @@
+{
+  "name": "helpdesk",
+  "version": "1.0.0",
+  "description": "Sistema de gerenciamento de chamados (Help Desk) desenvolvido para organizar e controlar solicitações de suporte técnico.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcosviniciosmendesdelima/HelpDesk.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/marcosviniciosmendesdelima/HelpDesk/issues"
+  },
+  "homepage": "https://github.com/marcosviniciosmendesdelima/HelpDesk#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
+    "husky": "^9.1.7"
+  }
+}

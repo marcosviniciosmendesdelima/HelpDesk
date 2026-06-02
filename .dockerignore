@@ -1,0 +1,14 @@
+# O que o Docker deve ignorar ao copiar os arquivos
+.git
+.gitignore
+.dockerignore
+.env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.venv
+venv
+.vscode
+.idea
+Dockerfile
