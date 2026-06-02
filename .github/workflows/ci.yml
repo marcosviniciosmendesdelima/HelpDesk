@@ -22,11 +22,33 @@ jobs:
         run: dotnet restore helpdesk-tickets.sln
       - name: Build
         run: dotnet build helpdesk-tickets.sln --no-restore
-      
+
       # Run the test project and generate OpenCover output in the repository root
       - name: Run Tests
         run: dotnet test tests/HelpDesk.Gateway.Tests/HelpDesk.Gateway.Tests.csproj --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage.opencover.xml
+
+      # Upload the generated coverage report
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ./coverage.opencover.xml
+
+  sonar-analysis:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
+      # Baixamos o artefato para a raiz
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: ./
+          
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
