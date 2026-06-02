@@ -2,7 +2,7 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, branch/viniciusmendes ]
   pull_request:
     branches: [ main ]
 
@@ -23,7 +23,6 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
       - name: Run Tests
-        # Adicionamos PYTHONPATH=. para garantir que o 'src' seja encontrado
         env:
           PYTHONPATH: .
         run: |
@@ -64,3 +63,4 @@ jobs:
             -Dsonar.organization=marcosviniciosmendesdelima
             -Dsonar.sources=src
             -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.python.version=3.13

@@ -1,13 +1,6 @@
-# Pastas e arquivos de ambiente/ferramentas
-.venv/
-venv/
-.env
+node_modules/
 __pycache__/
 *.pyc
-.vscode/
-.idea/
+.env
 bin/
 obj/
-coverage.opencover.xml
-.coverage
-coverage.xml
